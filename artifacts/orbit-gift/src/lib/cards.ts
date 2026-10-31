@@ -1,4 +1,5 @@
 import { CARD_TEXT, COPY, NEED } from './copy';
+import SLOTS from './card-slots.json';
 
 export type TemplateId = 'santa' | 'wish' | 'stumped' | 'tot';
 export type Purpose = 'hint' | 'list' | 'ask';
@@ -22,94 +23,56 @@ export const emptyFields = (): CardFields => ({
   santa: { loves: ['', '', ''], nos: ['', '', ''], budget: '' },
   wish: { wishes: [0, 1, 2, 3].map(() => ({ wish: '', because: '' })) },
   stumped: { love: '', no: '', own: '', hint: '' },
-  tot: { yes: Array(6).fill(''), no: Array(6).fill('') },
+  tot: { yes: Array(7).fill(''), no: Array(7).fill('') },
 });
 
-/**
- * TEMPORARY BLANK ART SLOTS — 8 pending (4 main + 4 neutral).
- * Waiting on the Director's uploaded backgrounds. Leave null until approved art arrives;
- * then set to an imported asset URL. Nothing is baked in: all words are drawn live.
- */
-export const ART_SLOTS: Record<TemplateId, { main: string | null; neutral: string | null }> = {
-  santa: { main: null, neutral: null },
-  wish: { main: null, neutral: null },
-  stumped: { main: null, neutral: null },
-  tot: { main: null, neutral: null },
+
+type Version = 'main' | 'neutral';
+const SLUG: Record<TemplateId, string> = {
+  santa: 'secret-santa', wish: 'all-i-want', stumped: 'im-stumped', tot: 'this-or-that',
 };
+const apiBase = () => (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+/** Director-approved backgrounds, served same-origin by the API (App Storage, read-only). */
+export const ART_SLOTS: Record<TemplateId, Record<Version, string>> = Object.fromEntries(
+  (Object.keys(SLUG) as TemplateId[]).map((t) => [t, {
+    main: `${apiBase()}/api/card-art/${SLUG[t]}-main.png`,
+    neutral: `${apiBase()}/api/card-art/${SLUG[t]}-neutral.png`,
+  }]),
+) as Record<TemplateId, Record<Version, string>>;
 
-interface Palette {
-  bg: string;
-  panel: string;
-  ink: string;
-  accent: string;
-  accent2: string;
-  muted: string;
-  footer: string;
-  footerInk: string;
-  mark: string;
-  families: string[];
-}
+interface Palette { ink: string; families: string[] }
+const INK = '#2C2A27'; // dark charcoal on the cream art
+const APP_NAVY = '#0A0C1F'; // hsl(234 52% 8%) — app --background
 
-// Main palettes per spec art direction. "pink" is included as a conservative family for every
-// warm palette so any pink refusal flips the whole card to neutral (Hinterwelle test).
+// Colour words per approved image. NEUTRAL_BASE colours appear in ALL images (main too), so a
+// hard-no on them fails closed. Any hard-no on a main-only colour (incl. conservative pink) flips to neutral.
+const NEUTRAL_BASE = ['charcoal', 'cream', 'ivory', 'off-white', 'beige', 'gold', 'golden', 'black', 'grey', 'gray', 'white'];
+const YELLOWS = ['yellow', 'mustard', 'ochre'];
 const PALETTES: Record<TemplateId, Palette> = {
-  santa: {
-    bg: '#F3EAD9', panel: '#EBDFC7', ink: '#25331F', accent: '#9E2C27', accent2: '#2F5A38', muted: '#7B6F58',
-    footer: '#E3D5BA', footerInk: '#25331F', mark: '#A8843A',
-    families: ['red', 'holly', 'scarlet', 'crimson', 'green', 'evergreen', 'cream', 'gold', 'golden', 'pink', 'ivory', 'beige'],
-  },
-  wish: {
-    bg: '#F7F0E3', panel: '#EFE3CB', ink: '#3A1820', accent: '#6D1D2C', accent2: '#9C7F45', muted: '#86705A',
-    footer: '#EADCC1', footerInk: '#3A1820', mark: '#A88A4E',
-    families: ['burgundy', 'red', 'maroon', 'wine', 'champagne', 'ivory', 'gold', 'golden', 'pink', 'cream'],
-  },
-  stumped: {
-    bg: '#FBF3E2', panel: '#FCEAB0', ink: '#16302F', accent: '#0E6C68', accent2: '#D9682A', muted: '#6E6A55',
-    footer: '#F2E2BF', footerInk: '#16302F', mark: '#B08A3A',
-    families: ['teal', 'turquoise', 'tangerine', 'orange', 'yellow', 'butter', 'ivory', 'cream', 'gold', 'golden', 'pink', 'blue', 'green'],
-  },
-  tot: {
-    bg: '#F2EBDC', panel: '#E7DECB', ink: '#2A2926', accent: '#55704F', accent2: '#B0553A', muted: '#77705F',
-    footer: '#E3D8C2', footerInk: '#2A2926', mark: '#A68A4F',
-    families: ['sage', 'green', 'terracotta', 'orange', 'rust', 'pink', 'cream', 'charcoal', 'gold', 'golden'],
-  },
+  santa: { ink: INK, families: ['red', 'holly', 'scarlet', 'crimson', 'cherry', 'green', 'evergreen', 'forest green', 'pink', 'rose', 'blush', ...NEUTRAL_BASE] },
+  wish: { ink: INK, families: ['burgundy', 'red', 'maroon', 'wine', 'oxblood', 'claret', 'pink', 'rose', 'blush', 'champagne', ...NEUTRAL_BASE] },
+  stumped: { ink: INK, families: ['teal', 'turquoise', 'aqua', 'tangerine', 'orange', 'coral', 'pink', 'blue', 'green', ...YELLOWS, 'butter', ...NEUTRAL_BASE] },
+  tot: { ink: INK, families: ['sage', 'green', 'olive', 'terracotta', 'orange', 'rust', 'brick', 'red', 'pink', 'peach', 'coral', ...NEUTRAL_BASE] },
 };
-
-const NEUTRAL: Palette = {
-  bg: '#F4EDE0', panel: '#EAE1D0', ink: '#2C2A27', accent: '#2C2A27', accent2: '#5E5850', muted: '#7A746A',
-  footer: '#E5DBC8', footerInk: '#2C2A27', mark: '#A68A4F',
-  families: ['cream', 'charcoal', 'gold', 'golden', 'ivory', 'beige', 'grey', 'gray', 'black'],
+const NEUTRALS: Record<TemplateId, Palette> = {
+  santa: { ink: INK, families: [...NEUTRAL_BASE, 'brown', 'tan'] },
+  wish: { ink: INK, families: [...NEUTRAL_BASE, 'blue', 'pale blue', 'light blue', 'baby blue', 'silver'] },
+  stumped: { ink: INK, families: [...NEUTRAL_BASE, ...YELLOWS] },
+  tot: { ink: INK, families: [...NEUTRAL_BASE, ...YELLOWS] },
 };
+const SQUARE_BG = ['navy', 'blue', 'midnight', 'indigo'];
 
 function hits(families: string[], refusals: string[]) {
   const text = refusals.join(' \n ').toLowerCase();
-  return families.filter((f) => new RegExp(`\\b${f}\\b`).test(text));
+  return families.filter((f) => new RegExp(`(^|[^a-z])${f.replace(/[-\s]/g, '[-\\s]?')}(e?s)?([^a-z]|$)`).test(text));
 }
 
 export function choosePalette(t: TemplateId, refusals: string[]): { pal: Palette; neutral: boolean } {
-  const main = PALETTES[t];
-  if (hits(main.families, refusals).length === 0) return { pal: main, neutral: false };
-  const h = hits(NEUTRAL.families, refusals);
-  // Use a permitted colour for the constellation mark if gold is refused.
-  const goldOut = h.includes('gold') || h.includes('golden');
-  if (h.some(f => !['gold', 'golden'].includes(f))) {
-    // A neutral version is not exempt from hard no's. Blank art can use a
-    // permitted high-contrast pair; approved artwork will need its own check.
-    const pairs = [
-      { bg: '#FFFFFF', ink: '#111111', families: ['white', 'black', 'charcoal', 'grey', 'gray'] },
-      { bg: '#101C3A', ink: '#FFFFFF', families: ['blue', 'navy', 'white'] },
-      { bg: '#FFFFFF', ink: '#17482B', families: ['white', 'green'] },
-      { bg: '#FFF6DB', ink: '#16233F', families: ['cream', 'ivory', 'yellow', 'blue', 'navy'] },
-    ];
-    const pair = pairs.find(p => hits(p.families, refusals).length === 0);
-    if (!pair) throw new Error('No permitted high-contrast card palette');
-    return { pal: {
-      bg: pair.bg, panel: pair.bg, ink: pair.ink, accent: pair.ink,
-      accent2: pair.ink, muted: pair.ink, footer: pair.bg,
-      footerInk: pair.ink, mark: pair.ink, families: pair.families,
-    }, neutral: true };
-  }
-  return { pal: { ...NEUTRAL, mark: goldOut ? NEUTRAL.ink : NEUTRAL.mark }, neutral: true };
+  // Base colours are in every image: refusing them fails closed even before choosing a version.
+  if (hits(NEUTRAL_BASE, refusals).length) throw new Error('No permitted card palette');
+  if (hits(PALETTES[t].families, refusals).length === 0) return { pal: PALETTES[t], neutral: false };
+  if (hits(NEUTRALS[t].families, refusals).length) throw new Error('No permitted card palette');
+  return { pal: NEUTRALS[t], neutral: true };
 }
 
 export interface Entry {
@@ -117,11 +80,6 @@ export interface Entry {
   text: string;
   sub?: string;
   subLabel?: string;
-}
-interface Section {
-  label?: string;
-  tone: 'a' | 'b';
-  entries: Entry[];
 }
 
 export interface RenderOpts {
@@ -164,295 +122,271 @@ export function entryList(t: TemplateId, f: CardFields, budgetAllowed: boolean):
   return out;
 }
 
-function buildSections(o: RenderOpts): Section[] {
-  const blank = o.mode !== 'filled';
+
+interface SlotDef {
+  id: string; x: number; y: number; w: number; h: number;
+  align?: 'center'; maxFont: number; minFont: number; maxLines: number; text?: string; prefix?: string;
+}
+const SRC_W = SLOTS.canvas.width;
+const SRC_H = SLOTS.canvas.height;
+const slotsFor = (t: TemplateId) => (SLOTS.templates as Record<string, { slots: SlotDef[] }>)[SLUG[t]].slots;
+const slotText = (t: TemplateId, id: string) => slotsFor(t).find((s) => s.id === id)?.text ?? '';
+
+const isJosefin = (id: string) => id === 'title' || id === 'subtitle' || /-(label|heading)$/.test(id);
+
+/** Maps editor fields + mode + omit list to exact slot ids. Missing ids are not drawn. */
+export function slotValues(o: RenderOpts): Record<string, string> {
+  const v: Record<string, string> = {};
+  const filled = o.mode === 'filled';
   const f = o.fields;
   const keep = (key: string, text: string) => !o.omit.has(key) && text.trim().length > 0;
-  const list = (prefix: string, arr: string[], n: number): Entry[] =>
-    blank
-      ? pad([], n).map((_, i) => ({ key: `${prefix}.${i}`, text: '' }))
-      : arr.map((t, i) => ({ key: `${prefix}.${i}`, text: t.trim() })).filter((e) => keep(e.key, e.text));
+  const pack = (prefix: string, arr: string[]) =>
+    arr.map((t, i) => ({ key: `${prefix}.${i}`, text: t.trim() })).filter((e) => keep(e.key, e.text)).map((e) => e.text);
+  const opening = filled && o.purpose ? COPY.opening[`${o.template}_${o.purpose}`] : undefined;
+  v.footer = COPY.footer(o.appName, o.appUrl);
 
   if (o.template === 'santa') {
-    const secs: Section[] = [
-      { label: CARD_TEXT.santa.loves, tone: 'a', entries: list('santa.loves', f.santa.loves, 3) },
-      { label: CARD_TEXT.santa.nos, tone: 'b', entries: list('santa.nos', f.santa.nos, 3) },
-    ];
-    const budgetOk = o.purpose !== 'hint' && o.showBudget && keep('santa.budget', f.santa.budget);
-    if (blank) secs.push({ label: CARD_TEXT.santa.budget, tone: 'a', entries: [{ key: 'santa.budget', text: '' }] });
-    else if (budgetOk) secs.push({ label: CARD_TEXT.santa.budget, tone: 'a', entries: [{ key: 'santa.budget', text: f.santa.budget.trim() }] });
-    return secs;
-  }
-  if (o.template === 'wish') {
-    const entries: Entry[] = blank
-      ? [0, 1, 2, 3].map((i) => ({ key: `wish.${i}`, text: '', sub: '', subLabel: CARD_TEXT.wish.because }))
-      : f.wish.wishes
-          .map((w, i) => ({
-            key: `wish.${i}`,
-            text: w.wish.trim(),
-            sub: keep(`wish.because.${i}`, w.because) ? w.because.trim() : undefined,
-            subLabel: keep(`wish.because.${i}`, w.because) ? CARD_TEXT.wish.because : undefined,
-          }))
-          .filter((e) => keep(e.key, e.text));
-    if (o.size === 'square') {
-      const half = Math.ceil(entries.length / 2);
-      return [
-        { tone: 'a', entries: entries.slice(0, half) },
-        { tone: 'a', entries: entries.slice(half) },
-      ];
-    }
-    return [{ tone: 'a', entries }];
-  }
-  if (o.template === 'tot') {
-    return [
-      { label: CARD_TEXT.tot.yes, tone: 'a', entries: list('tot.yes', f.tot.yes, 6) },
-      { label: CARD_TEXT.tot.no, tone: 'b', entries: list('tot.no', f.tot.no, 6) },
-    ];
-  }
-  const st = (k: 'love' | 'no' | 'own' | 'hint', label: string, tone: 'a' | 'b', n: number): Section => ({
-    label,
-    tone,
-    entries: blank ? list(`stumped.${k}`, [], n) : list(`stumped.${k}`, f.stumped[k].split(/\n+/), 0),
-  });
-  return [
-    st('love', CARD_TEXT.stumped.love, 'a', 3),
-    st('no', CARD_TEXT.stumped.no, 'b', 3),
-    st('own', CARD_TEXT.stumped.own, 'a', 2),
-    st('hint', CARD_TEXT.stumped.hint, 'b', 1),
-  ];
-}
-
-function header(o: RenderOpts) {
-  const T = CARD_TEXT[o.template] as { title: string; subtitle?: string };
-  let opening: string | undefined;
-  if (o.mode === 'request') opening = COPY.opening.stumped;
-  else if (o.mode === 'filled' && o.purpose) opening = COPY.opening[`${o.template}_${o.purpose}`];
-  return { title: T.title, subtitle: T.subtitle, opening };
-}
-
-function wrap(ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] {
-  const words = text.split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let cur = '';
-  for (const w of words) {
-    if (ctx.measureText(w).width > maxW) {
-      if (cur) { lines.push(cur); cur = ''; }
-      for (const char of w) {
-        if (cur && ctx.measureText(cur + char).width > maxW) {
-          lines.push(cur);
-          cur = char;
-        } else cur += char;
+    v.title = slotText('santa', 'title');
+    if (opening) v.opening = opening;
+    v['loves-label'] = slotText('santa', 'loves-label');
+    v['nos-label'] = slotText('santa', 'nos-label');
+    if (filled) {
+      pack('santa.loves', f.santa.loves).slice(0, 3).forEach((t, i) => (v[`love-${i + 1}`] = t));
+      pack('santa.nos', f.santa.nos).slice(0, 3).forEach((t, i) => (v[`no-${i + 1}`] = t));
+      // Budget never appears on hint cards; label hides with value.
+      if (o.purpose !== 'hint' && o.showBudget && keep('santa.budget', f.santa.budget)) {
+        v['budget-label'] = slotText('santa', 'budget-label');
+        v.budget = f.santa.budget.trim();
       }
-      continue;
+    } else if (o.purpose !== 'hint') v['budget-label'] = slotText('santa', 'budget-label');
+  } else if (o.template === 'wish') {
+    v.title = slotText('wish', 'title');
+    v.opening = opening ?? CARD_TEXT.wish.subtitle;
+    const prefix = slotsFor('wish').find((s) => s.id === 'because-1')?.prefix ?? '';
+    const strip = (s: string) => s.replace(/^\s*because\s*(\.{3}|…)?\s*/i, '');
+    if (filled) {
+      f.wish.wishes
+        .map((w, i) => ({ i, wish: w.wish.trim(), because: strip(w.because.trim()) }))
+        .filter((w) => keep(`wish.${w.i}`, w.wish))
+        .slice(0, 4)
+        .forEach((w, n) => {
+          v[`wish-${n + 1}`] = w.wish;
+          if (keep(`wish.because.${w.i}`, w.because)) v[`because-${n + 1}`] = prefix + w.because;
+        });
+    } else for (let n = 1; n <= 4; n++) v[`because-${n}`] = prefix.trimEnd();
+  } else if (o.template === 'stumped') {
+    v.title = slotText('stumped', 'title');
+    v.request = slotText('stumped', 'request');
+    (['love', 'no', 'own', 'hint'] as const).forEach((k, i) => {
+      v[`q${i + 1}-label`] = slotText('stumped', `q${i + 1}-label`);
+      if (filled) {
+        const lines = f.stumped[k].split(/\n+/).map((t, j) => ({ key: `stumped.${k}.${j}`, text: t.trim() })).filter((e) => keep(e.key, e.text));
+        if (lines.length) v[`q${i + 1}-answer`] = lines.map((e) => e.text).join('\n');
+      }
+    });
+    if (o.mode !== 'blank') v.link = `Fill it in at ${o.completionUrl || completionUrl()}`;
+    if (o.mode === 'blank') v.link = NEED('label on blank PNG saying it is for print/manual completion');
+  } else {
+    (['yes-heading', 'no-heading', 'title', 'subtitle'] as const).forEach((id) => (v[id] = slotText('tot', id)));
+    if (opening) v.opening = opening;
+    if (filled) {
+      pack('tot.yes', f.tot.yes).slice(0, 7).forEach((t, i) => (v[`yes-${i + 1}`] = t));
+      pack('tot.no', f.tot.no).slice(0, 7).forEach((t, i) => (v[`no-${i + 1}`] = t));
     }
-    const t = cur ? `${cur} ${w}` : w;
-    if (ctx.measureText(t).width > maxW && cur) {
-      lines.push(cur);
-      cur = w;
-    } else cur = t;
   }
-  if (cur) lines.push(cur);
-  return lines.length ? lines : [''];
+  return v;
 }
 
-function txt(
-  ctx: CanvasRenderingContext2D, t: string, font: string, color: string, lh: number,
-  x: number, y: number, maxW: number, draw: boolean, align: CanvasTextAlign = 'left',
-): number {
-  ctx.font = font;
-  const ls = wrap(ctx, t, maxW);
-  if (draw) {
-    ctx.fillStyle = color;
-    ctx.textAlign = align;
-    ctx.textBaseline = 'alphabetic';
-    ls.forEach((l, i) => ctx.fillText(l, align === 'center' ? x + maxW / 2 : x, y + lh * (i + 1) - lh * 0.28));
-  }
-  return y + ls.length * lh;
+export interface SlotDiagnostic {
+  slotId: string;
+  box: { x: number; y: number; w: number; h: number };
+  bounds: { x: number; y: number; w: number; h: number };
+  font: string;
+  fontPx: number;
+  lineCount: number;
+  ellipsis: boolean;
+  inside: boolean;
 }
 
-function rule(ctx: CanvasRenderingContext2D, x1: number, x2: number, y: number, color: string) {
+const graphemes = (s: string): string[] => {
+  const Seg = (Intl as unknown as { Segmenter?: new (l?: string, o?: { granularity: string }) => { segment(s: string): Iterable<{ segment: string }> } }).Segmenter;
+  return Seg ? Array.from(new Seg(undefined, { granularity: 'grapheme' }).segment(s), (x) => x.segment) : Array.from(s);
+};
+const inkW = (ctx: CanvasRenderingContext2D, s: string) => {
+  const m = ctx.measureText(s);
+  // Full ink extent incl. negative left bearing and right overhang beyond the advance.
+  return Math.max(m.width, m.actualBoundingBoxRight) + Math.max(0, m.actualBoundingBoxLeft);
+};
+
+function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] {
+  const out: string[] = [];
+  for (const para of text.split(/\r?\n/)) {
+    const words = para.split(/\s+/).filter(Boolean);
+    let cur = '';
+    for (const w of words) {
+      const t = cur ? `${cur} ${w}` : w;
+      if (inkW(ctx, t) <= maxW) { cur = t; continue; }
+      if (cur) { out.push(cur); cur = ''; }
+      if (inkW(ctx, w) <= maxW) { cur = w; continue; }
+      for (const g of graphemes(w)) {
+        if (cur && inkW(ctx, cur + g) > maxW) { out.push(cur); cur = g; } else cur += g;
+      }
+    }
+    if (cur) out.push(cur);
+  }
+  return out.length ? out : [''];
+}
+
+function ellipsize(ctx: CanvasRenderingContext2D, line: string, maxW: number) {
+  const g = graphemes(line.trimEnd());
+  while (g.length && inkW(ctx, g.join('').trimEnd() + '…') > maxW) g.pop();
+  return g.join('').trimEnd() + '…';
+}
+
+function drawSlot(ctx: CanvasRenderingContext2D, s: SlotDef, text: string, ink: string, kx: number, ky: number): SlotDiagnostic {
+  const box = { x: s.x * kx, y: s.y * ky, w: s.w * kx, h: s.h * ky };
+  const family = isJosefin(s.id) ? '"Josefin Sans"' : '"DM Sans"';
+  const weight = isJosefin(s.id) ? (s.id === 'title' ? 300 : 600) : 400;
+  const LH = 1.18;
+  const fontAt = (px: number) => `${weight} ${px}px ${family}`;
+  const single = text.replace(/\s*\n\s*/g, ' ');
+  const vfit = (px: number, n: number) => {
+    ctx.font = fontAt(px);
+    const m = ctx.measureText('ÁgjÉ|');
+    const lineH = Math.max(px * LH, m.actualBoundingBoxAscent + m.actualBoundingBoxDescent);
+    return lineH * n <= box.h + 0.5 ? lineH : 0;
+  };
+  let px = s.maxFont * kx;
+  const minPx = s.minFont * kx;
+  let lines: string[] = [];
+  let ellipsis = false;
+  const hasBreaks = text.includes('\n') && s.maxLines > 1;
+  for (; px >= minPx - 0.01; px -= 1) {
+    ctx.font = fontAt(px);
+    if (!hasBreaks && inkW(ctx, single) <= box.w && vfit(px, 1)) { lines = [single]; break; }
+  }
+  if (!lines.length) {
+    px = minPx;
+    ctx.font = fontAt(px);
+    let maxL = s.maxLines;
+    while (maxL > 1 && !vfit(px, maxL)) maxL--;
+    const all = s.maxLines === 1 ? [single] : wrapLines(ctx, text, box.w);
+    lines = all.slice(0, maxL);
+    if (all.length > maxL || inkW(ctx, lines[lines.length - 1]) > box.w) {
+      ellipsis = true;
+      lines[lines.length - 1] = ellipsize(ctx, lines[lines.length - 1], box.w);
+    }
+  }
+  ctx.font = fontAt(px);
+  const lineH = vfit(px, 1) || px * LH;
+  const blockH = lineH * lines.length;
+  const top = box.y + Math.max(0, (box.h - blockH) / 2);
   ctx.save();
-  ctx.strokeStyle = color;
-  ctx.globalAlpha = 0.45;
-  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(x1, y);
-  ctx.lineTo(x2, y);
-  ctx.stroke();
-  ctx.restore();
-}
-
-function section(ctx: CanvasRenderingContext2D, sec: Section, x: number, y: number, w: number, s: number, pal: Palette, draw: boolean) {
-  const ip = 24 * s;
-  let cy = y + ip;
-  const iw = w - ip * 2;
-  if (sec.label) {
-    cy = txt(ctx, sec.label, `500 ${25 * s}px "DM Sans"`, sec.tone === 'b' ? pal.accent2 : pal.accent, 34 * s, x + ip, cy, iw, draw);
-    cy += 8 * s;
-  }
-  for (const e of sec.entries) {
-    if (e.text) {
-      if (draw) {
-        ctx.fillStyle = sec.tone === 'b' ? pal.accent2 : pal.accent;
-        ctx.beginPath();
-        ctx.arc(x + ip + 6 * s, cy + 22 * s, 5 * s, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      cy = txt(ctx, e.text, `500 ${31 * s}px "DM Sans"`, pal.ink, 42 * s, x + ip + 22 * s, cy, iw - 22 * s, draw);
-    } else {
-      cy += 50 * s;
-      if (draw) rule(ctx, x + ip, x + w - ip, cy - 8 * s, pal.muted);
-    }
-    if (e.subLabel !== undefined) {
-      if (e.sub) {
-        cy = txt(ctx, `${e.subLabel} ${e.sub}`, `400 ${25 * s}px "DM Sans"`, pal.muted, 34 * s, x + ip + 22 * s, cy, iw - 22 * s, draw);
-      } else {
-        cy = txt(ctx, e.subLabel, `400 ${25 * s}px "DM Sans"`, pal.muted, 34 * s, x + ip + 22 * s, cy, iw - 22 * s, draw);
-        cy += 34 * s;
-        if (draw) rule(ctx, x + ip + 22 * s, x + w - ip, cy - 8 * s, pal.muted);
-      }
-    }
-    cy += 6 * s;
-  }
-  return cy + ip - 6 * s;
-}
-
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
-function paint(ctx: CanvasRenderingContext2D, W: number, o: RenderOpts, pal: Palette, s: number, draw: boolean, secs: Section[]) {
-  const padX = 72;
-  const cw = W - padX * 2;
-  const h = header(o);
-  let y = 64 * s + 8;
-  y = txt(ctx, h.title, `300 ${70 * s}px "Josefin Sans"`, pal.ink, 80 * s, padX, y, cw, draw, 'center');
-  if (h.subtitle) y = txt(ctx, h.subtitle, `300 ${34 * s}px "Josefin Sans"`, pal.accent, 44 * s, padX, y + 4 * s, cw, draw, 'center');
-  if (h.opening) y = txt(ctx, h.opening, `400 ${29 * s}px "DM Sans"`, pal.ink, 40 * s, padX + 20, y + 14 * s, cw - 40, draw, 'center');
-  if (o.name.trim()) y = txt(ctx, o.name.trim(), `500 ${30 * s}px "DM Sans"`, pal.accent2, 40 * s, padX, y + 10 * s, cw, draw, 'center');
-  y += 26 * s;
-  const cols = o.template === 'tot' || o.size === 'square' ? 2 : 1;
-  const gap = 22 * s;
-  const colW = (cw - gap * (cols - 1)) / cols;
-  for (let i = 0; i < secs.length; i += cols) {
-    const row = secs.slice(i, i + cols);
-    const hs = row.map((sec, j) => section(ctx, sec, padX + j * (colW + gap), y, colW, s, pal, false) - y);
-    const rowH = Math.max(...hs);
-    if (draw) {
-      row.forEach((sec, j) => {
-        const x = padX + j * (colW + gap);
-        ctx.save();
-        ctx.fillStyle = pal.panel;
-        ctx.globalAlpha = 0.75;
-        roundRect(ctx, x, y, colW, rowH, 22 * s);
-        ctx.fill();
-        ctx.restore();
-        section(ctx, sec, x, y, colW, s, pal, true);
-      });
-    }
-    y += rowH + gap;
-  }
-  return y;
-}
-
-function drawMark(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) {
-  const pts = [[0, 0.7], [0.28, 0.15], [0.52, 0.55], [0.78, 0.1], [1, 0.62]].map(([a, b]) => [x + a * 76, y + b * 34]);
-  ctx.save();
-  ctx.strokeStyle = color;
-  ctx.fillStyle = color;
-  ctx.lineWidth = 1.6;
-  ctx.globalAlpha = 0.85;
-  ctx.beginPath();
-  pts.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
-  ctx.stroke();
-  pts.forEach(([px, py], i) => {
-    ctx.beginPath();
-    ctx.arc(px, py, i === 3 ? 4.2 : 3, 0, Math.PI * 2);
-    ctx.fill();
+  ctx.rect(box.x, box.y, box.w, box.h);
+  ctx.clip();
+  ctx.fillStyle = ink;
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = s.align === 'center' ? 'center' : 'left';
+  const bx = { l: Infinity, t: Infinity, r: -Infinity, b: -Infinity };
+  lines.forEach((l, i) => {
+    const m = ctx.measureText(l);
+    const asc = m.fontBoundingBoxAscent ?? px * 0.8;
+    const desc = m.fontBoundingBoxDescent ?? px * 0.2;
+    const baseY = top + i * lineH + (lineH - (asc + desc)) / 2 + asc;
+    const x = s.align === 'center'
+      ? box.x + box.w / 2 + (m.actualBoundingBoxLeft - m.actualBoundingBoxRight) / 2
+      : box.x + Math.max(0, m.actualBoundingBoxLeft);
+    ctx.fillText(l, x, baseY);
+    bx.l = Math.min(bx.l, x - m.actualBoundingBoxLeft);
+    bx.r = Math.max(bx.r, x + m.actualBoundingBoxRight);
+    bx.t = Math.min(bx.t, baseY - m.actualBoundingBoxAscent);
+    bx.b = Math.max(bx.b, baseY + m.actualBoundingBoxDescent);
   });
   ctx.restore();
+  const bounds = { x: bx.l, y: bx.t, w: bx.r - bx.l, h: bx.b - bx.t };
+  const e = 0.5;
+  return {
+    slotId: s.id, box, bounds, font: fontAt(Math.round(px * 100) / 100), fontPx: px, lineCount: lines.length, ellipsis,
+    inside: bounds.x >= box.x - e && bounds.y >= box.y - e && bx.r <= box.x + box.w + e && bx.b <= box.y + box.h + e,
+  };
 }
 
-function loadImage(src: string): Promise<HTMLImageElement | null> {
-  return new Promise((res) => {
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => {
     const img = new Image();
-    img.onload = () => res(img);
-    img.onerror = () => res(null);
+    img.onload = () => (img.naturalWidth ? res(img) : rej(new Error('art')));
+    img.onerror = () => rej(new Error('art'));
     img.src = src;
   });
 }
 
-let fontsReady: Promise<unknown> | null = null;
-function ensureFonts() {
+const FONT_SPECS = ['300 40px "Josefin Sans"', '600 40px "Josefin Sans"', '400 40px "DM Sans"'];
+let fontsReady: Promise<void> | null = null;
+function ensureFonts(): Promise<void> {
   if (!fontsReady) {
-    fontsReady = Promise.all([
-      document.fonts.load('300 40px "Josefin Sans"'),
-      document.fonts.load('400 40px "Josefin Sans"'),
-      document.fonts.load('600 40px "Josefin Sans"'),
-      document.fonts.load('500 40px "DM Sans"'),
-      document.fonts.load('400 40px "DM Sans"'),
-    ]).catch(() => undefined);
+    fontsReady = (async () => {
+      await document.fonts.ready;
+      const loaded = await Promise.all(FONT_SPECS.map((f) => document.fonts.load(f)));
+      if (loaded.some((l) => l.length === 0)) throw new Error('Card fonts unavailable');
+    })();
+    fontsReady.catch(() => { fontsReady = null; });
   }
   return fontsReady;
 }
 
-export async function renderCard(o: RenderOpts): Promise<{ canvas: HTMLCanvasElement; neutral: boolean }> {
-  await ensureFonts();
-  const W = 1080;
-  const H = o.size === 'portrait' ? 1350 : 1080;
+function starrySquare(portrait: HTMLCanvasElement): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = 1080; c.height = 1080;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = APP_NAVY;
+  ctx.fillRect(0, 0, 1080, 1080);
+  let seed = 1793417;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  ctx.fillStyle = '#F4EDE0';
+  for (let i = 0; i < 140; i++) {
+    const x = rnd() * 1080, y = rnd() * 1080, r = 0.5 + rnd() * 1.4;
+    ctx.globalAlpha = 0.25 + rnd() * 0.6;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  // contain: 1080x1350 * 0.8 = 864x1080, centred at x=108. Never cropped or reflowed.
+  ctx.drawImage(portrait, 108, 0, 864, 1080);
+  return c;
+}
+
+export interface RenderResult { canvas: HTMLCanvasElement; neutral: boolean; diagnostics: SlotDiagnostic[] }
+
+async function renderVersion(o: RenderOpts, version: Version, ink: string): Promise<RenderResult> {
+  const [img] = await Promise.all([loadImage(ART_SLOTS[o.template][version]), ensureFonts()]);
+  const W = 1080, H = 1350;
   const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
+  canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d')!;
+  // Source is 1122x1402; scale per axis (aspect differs < 0.04%) so nothing is cropped.
+  ctx.drawImage(img, 0, 0, W, H);
+  const kx = W / SRC_W, ky = H / SRC_H;
+  const vals = slotValues(o);
+  const diagnostics: SlotDiagnostic[] = [];
+  for (const s of slotsFor(o.template)) {
+    const t = vals[s.id];
+    if (t && t.trim()) diagnostics.push(drawSlot(ctx, s, t, ink, kx, ky));
+  }
+  const out = o.size === 'square' ? starrySquare(canvas) : canvas;
+  return { canvas: out, neutral: version === 'neutral', diagnostics };
+}
+
+/** Ordinary render: automatic palette check against the hard-no list (throws when no permitted version). */
+export async function renderCard(o: RenderOpts): Promise<RenderResult> {
   const { pal, neutral } = choosePalette(o.template, o.refusals);
+  // Starry square background is app navy: a blue/navy hard-no fails closed rather than use a forbidden bg.
+  if (o.size === 'square' && hits(SQUARE_BG, o.refusals).length) throw new Error('No permitted square background');
+  return renderVersion(o, neutral ? 'neutral' : 'main', pal.ink);
+}
 
-  // Background: temporary blank slot (flat palette fill) until approved art is uploaded.
-  ctx.fillStyle = pal.bg;
-  ctx.fillRect(0, 0, W, H);
-  const paletteAdjusted = neutral && pal.bg !== NEUTRAL.bg;
-  const slot = paletteAdjusted ? null : ART_SLOTS[o.template][neutral ? 'neutral' : 'main'];
-  if (slot) {
-    const img = await loadImage(slot);
-    if (img) {
-      const sc = Math.max(W / img.width, H / img.height);
-      ctx.drawImage(img, (W - img.width * sc) / 2, (H - img.height * sc) / 2, img.width * sc, img.height * sc);
-    }
-  }
-
-  const FOOT = 92;
-  const linkLine = o.template === 'stumped' && o.mode !== 'filled' ? o.completionUrl : undefined;
-  const blankLabel = o.mode === 'blank' ? NEED('label on blank PNG saying it is for print/manual completion') : undefined;
-  const limit = H - FOOT - (linkLine ? 70 : 0) - (blankLabel ? 48 : 0) - 20;
-  const secs = buildSections(o);
-
-  let s = 1;
-  for (; s > 0.42; s -= 0.03) {
-    if (paint(ctx, W, o, pal, s, false, secs) <= limit) break;
-  }
-  paint(ctx, W, o, pal, s, true, secs);
-
-  let by = H - FOOT;
-  if (linkLine) {
-    by -= 62;
-    txt(ctx, linkLine, `500 ${28}px "DM Sans"`, pal.accent, 40, 60, by + 8, W - 120, true, 'center');
-  }
-  if (blankLabel) {
-    by -= 46;
-    txt(ctx, blankLabel, `500 ${22}px "DM Sans"`, pal.muted, 32, 60, by + 6, W - 120, true, 'center');
-  }
-
-  ctx.fillStyle = pal.footer;
-  ctx.fillRect(0, H - FOOT, W, FOOT);
-  txt(ctx, COPY.footer(o.appName, o.appUrl), `500 ${20}px "DM Sans"`, pal.footerInk, 25, 56, H - FOOT + 16, W - 240, true);
-  drawMark(ctx, W - 56 - 76, H - FOOT + 30, pal.mark);
-
-  return { canvas, neutral };
+/** QA ONLY — forces main or neutral art, skipping the palette check. Not wired to UI. */
+export function renderReviewCard(o: RenderOpts, version: Version): Promise<RenderResult> {
+  return renderVersion(o, version, INK);
 }
 
 export function canvasToFile(canvas: HTMLCanvasElement, filename: string): Promise<File> {

@@ -8,6 +8,16 @@
 import * as zod from 'zod';
 
 
+/**
+ * @summary Exact Director-approved public share-card background
+ */
+export const GetCardArtParams = zod.object({
+  "filename": zod.enum(['secret-santa-main.png', 'secret-santa-neutral.png', 'all-i-want-main.png', 'all-i-want-neutral.png', 'im-stumped-main.png', 'im-stumped-neutral.png', 'this-or-that-main.png', 'this-or-that-neutral.png'])
+})
+
+export const GetCardArtResponse = zod.unknown()
+
+
 export const searchTasteBodyTextMax = 200;
 
 export const searchTasteBodyKindMax = 100;

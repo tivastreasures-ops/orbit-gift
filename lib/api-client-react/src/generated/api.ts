@@ -54,6 +54,83 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
+export const getGetCardArtUrl = (filename: 'secret-santa-main.png' | 'secret-santa-neutral.png' | 'all-i-want-main.png' | 'all-i-want-neutral.png' | 'im-stumped-main.png' | 'im-stumped-neutral.png' | 'this-or-that-main.png' | 'this-or-that-neutral.png',) => {
+
+
+
+
+  return `/api/card-art/${filename}`
+}
+
+/**
+ * @summary Exact Director-approved public share-card background
+ */
+export const getCardArt = async (filename: 'secret-santa-main.png' | 'secret-santa-neutral.png' | 'all-i-want-main.png' | 'all-i-want-neutral.png' | 'im-stumped-main.png' | 'im-stumped-neutral.png' | 'this-or-that-main.png' | 'this-or-that-neutral.png', options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetCardArtUrl(filename),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCardArtQueryKey = (filename: 'secret-santa-main.png' | 'secret-santa-neutral.png' | 'all-i-want-main.png' | 'all-i-want-neutral.png' | 'im-stumped-main.png' | 'im-stumped-neutral.png' | 'this-or-that-main.png' | 'this-or-that-neutral.png',) => {
+    return [
+    `/api/card-art/${filename}`
+    ] as const;
+    }
+
+
+export const getGetCardArtQueryOptions = <TData = Awaited<ReturnType<typeof getCardArt>>, TError = ErrorType<void>>(filename: 'secret-santa-main.png' | 'secret-santa-neutral.png' | 'all-i-want-main.png' | 'all-i-want-neutral.png' | 'im-stumped-main.png' | 'im-stumped-neutral.png' | 'this-or-that-main.png' | 'this-or-that-neutral.png', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCardArt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCardArtQueryKey(filename);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCardArt>>> = ({ signal }) => getCardArt(filename, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: filename !== null && filename !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCardArt>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCardArtQueryResult = NonNullable<Awaited<ReturnType<typeof getCardArt>>>
+export type GetCardArtQueryError = ErrorType<void>
+
+
+/**
+ * @summary Exact Director-approved public share-card background
+ */
+
+export function useGetCardArt<TData = Awaited<ReturnType<typeof getCardArt>>, TError = ErrorType<void>>(
+ filename: 'secret-santa-main.png' | 'secret-santa-neutral.png' | 'all-i-want-main.png' | 'all-i-want-neutral.png' | 'im-stumped-main.png' | 'im-stumped-neutral.png' | 'this-or-that-main.png' | 'this-or-that-neutral.png', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCardArt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCardArtQueryOptions(filename,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getSearchTasteUrl = () => {
 
 

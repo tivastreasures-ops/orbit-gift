@@ -9,11 +9,17 @@ Use the supplied COPY DECK verbatim. Do not invent user-facing copy; mark missin
 
 **How to apply:** Check the attached Orbit & Wonder build spec and the Director-approved supplemental copy in BUILD.md before UI or export copy changes. The Director supplied replacements for all original copy gaps; do not reintroduce placeholders for those approved purposes.
 
-Keep share-card art as temporary blank slots until the Director uploads eight backgrounds (four main, four neutral) and gives explicit go-ahead. Do not generate substitute art or treat placeholders as approved.
+The Director approved and supplied the eight final share-card backgrounds (four main, four neutral) and the exact text-slot JSON on 2026-10-30. Use that set unchanged; do not substitute, regenerate, crop square cards or revert to blank placeholders.
 
-**Why:** The user is supplying the final card backgrounds and has reserved approval.
+**Why:** The user explicitly approved this set and asked for integration; this supersedes the earlier hold on blank art slots.
 
-**How to apply:** Final text overlay, constellation signature, portrait/square and no-pink artwork checks happen only after upload and approval.
+**How to apply:** Follow the supplied slot geometry/default copy and clip fitted text to its box. Square exports contain the whole portrait on the starry background. New art still needs explicit Director approval; hard-no colours select neutral and cannot be recoloured away.
+
+Do not restore a printed name or name-entry control without an approved name slot.
+
+**Why:** The final approved slot map has no name box; inventing a position would violate the Director's exact geometry and could expose a saved private name.
+
+**How to apply:** Keep the recipient's name in the app's profile/universe, but require a Director-supplied slot before adding it to these share-card images.
 
 No accounts or database in this MVP; browser-local profiles/keepers, no automatic returned-PNG import.
 

@@ -1,0 +1,645 @@
+{
+ "canvas": {
+  "width": 1122,
+  "height": 1402,
+  "note": "Coordinates are pixels on the 1122x1402 source images. Scale proportionally to 1080x1350 (factor 0.9626)."
+ },
+ "rules": {
+  "fit": "Each slot is a box (x, y, w, h). Draw text inside it: start at the given maxFont, shrink to minFont, then wrap to maxLines, then end with an ellipsis. Never draw outside the box.",
+  "align": "left unless the slot says center",
+  "font": "Josefin Sans for title/heading/label slots, DM Sans for entries and footer",
+  "square": "1080x1080 export = the whole portrait card scaled to fit, centered on the app's starry background. Never crop."
+ },
+ "templates": {
+  "secret-santa": {
+   "images": {
+    "main": "secret-santa-main.png",
+    "neutral": "secret-santa-neutral.png"
+   },
+   "slots": [
+    {
+     "id": "title",
+     "x": 280,
+     "y": 130,
+     "w": 560,
+     "h": 90,
+     "align": "center",
+     "maxFont": 56,
+     "minFont": 34,
+     "maxLines": 2,
+     "text": "Dear Secret Santa,"
+    },
+    {
+     "id": "opening",
+     "x": 280,
+     "y": 225,
+     "w": 560,
+     "h": 60,
+     "align": "center",
+     "maxFont": 30,
+     "minFont": 22,
+     "maxLines": 2,
+     "text": "[opening line]"
+    },
+    {
+     "id": "loves-label",
+     "x": 236,
+     "y": 330,
+     "w": 640,
+     "h": 30,
+     "maxFont": 24,
+     "minFont": 18,
+     "maxLines": 1,
+     "text": "Three things I'd love"
+    },
+    {
+     "id": "love-1",
+     "x": 236,
+     "y": 372,
+     "w": 642,
+     "h": 46,
+     "maxFont": 34,
+     "minFont": 22,
+     "maxLines": 1
+    },
+    {
+     "id": "love-2",
+     "x": 236,
+     "y": 442,
+     "w": 642,
+     "h": 46,
+     "maxFont": 34,
+     "minFont": 22,
+     "maxLines": 1
+    },
+    {
+     "id": "love-3",
+     "x": 236,
+     "y": 508,
+     "w": 642,
+     "h": 46,
+     "maxFont": 34,
+     "minFont": 22,
+     "maxLines": 1
+    },
+    {
+     "id": "nos-label",
+     "x": 236,
+     "y": 662,
+     "w": 640,
+     "h": 30,
+     "maxFont": 24,
+     "minFont": 18,
+     "maxLines": 1,
+     "text": "Three things I'd rather not get"
+    },
+    {
+     "id": "no-1",
+     "x": 236,
+     "y": 700,
+     "w": 642,
+     "h": 44,
+     "maxFont": 34,
+     "minFont": 22,
+     "maxLines": 1
+    },
+    {
+     "id": "no-2",
+     "x": 236,
+     "y": 772,
+     "w": 642,
+     "h": 44,
+     "maxFont": 34,
+     "minFont": 22,
+     "maxLines": 1
+    },
+    {
+     "id": "no-3",
+     "x": 236,
+     "y": 842,
+     "w": 642,
+     "h": 44,
+     "maxFont": 34,
+     "minFont": 22,
+     "maxLines": 1
+    },
+    {
+     "id": "budget-label",
+     "x": 236,
+     "y": 976,
+     "w": 640,
+     "h": 30,
+     "maxFont": 24,
+     "minFont": 18,
+     "maxLines": 1,
+     "text": "My gift budget"
+    },
+    {
+     "id": "budget",
+     "x": 236,
+     "y": 1010,
+     "w": 642,
+     "h": 42,
+     "maxFont": 34,
+     "minFont": 22,
+     "maxLines": 1
+    },
+    {
+     "id": "footer",
+     "x": 40,
+     "y": 1312,
+     "w": 950,
+     "h": 56,
+     "maxFont": 26,
+     "minFont": 18,
+     "maxLines": 1,
+     "text": "Made with Orbit & Wonder \u00b7 [APP URL]"
+    }
+   ]
+  },
+  "all-i-want": {
+   "images": {
+    "main": "all-i-want-main.png",
+    "neutral": "all-i-want-neutral.png"
+   },
+   "slots": [
+    {
+     "id": "title",
+     "x": 290,
+     "y": 150,
+     "w": 660,
+     "h": 100,
+     "align": "center",
+     "maxFont": 60,
+     "minFont": 36,
+     "maxLines": 1,
+     "text": "All I Want for Christmas..."
+    },
+    {
+     "id": "opening",
+     "x": 290,
+     "y": 260,
+     "w": 660,
+     "h": 90,
+     "align": "center",
+     "maxFont": 32,
+     "minFont": 22,
+     "maxLines": 2,
+     "text": "[opening line, or the subtitle 'A few extremely helpful hints.']"
+    },
+    {
+     "id": "wish-1",
+     "x": 280,
+     "y": 425,
+     "w": 625,
+     "h": 58,
+     "maxFont": 38,
+     "minFont": 24,
+     "maxLines": 1
+    },
+    {
+     "id": "because-1",
+     "x": 280,
+     "y": 499,
+     "w": 625,
+     "h": 50,
+     "maxFont": 24,
+     "minFont": 18,
+     "maxLines": 2,
+     "prefix": "Because... "
+    },
+    {
+     "id": "wish-2",
+     "x": 280,
+     "y": 619,
+     "w": 625,
+     "h": 58,
+     "maxFont": 38,
+     "minFont": 24,
+     "maxLines": 1
+    },
+    {
+     "id": "because-2",
+     "x": 280,
+     "y": 693,
+     "w": 625,
+     "h": 50,
+     "maxFont": 24,
+     "minFont": 18,
+     "maxLines": 2,
+     "prefix": "Because... "
+    },
+    {
+     "id": "wish-3",
+     "x": 280,
+     "y": 816,
+     "w": 625,
+     "h": 58,
+     "maxFont": 38,
+     "minFont": 24,
+     "maxLines": 1
+    },
+    {
+     "id": "because-3",
+     "x": 280,
+     "y": 890,
+     "w": 625,
+     "h": 50,
+     "maxFont": 24,
+     "minFont": 18,
+     "maxLines": 2,
+     "prefix": "Because... "
+    },
+    {
+     "id": "wish-4",
+     "x": 280,
+     "y": 1009,
+     "w": 625,
+     "h": 58,
+     "maxFont": 38,
+     "minFont": 24,
+     "maxLines": 1
+    },
+    {
+     "id": "because-4",
+     "x": 280,
+     "y": 1083,
+     "w": 625,
+     "h": 50,
+     "maxFont": 24,
+     "minFont": 18,
+     "maxLines": 2,
+     "prefix": "Because... "
+    },
+    {
+     "id": "footer",
+     "x": 60,
+     "y": 1300,
+     "w": 760,
+     "h": 50,
+     "maxFont": 26,
+     "minFont": 18,
+     "maxLines": 1,
+     "text": "Made with Orbit & Wonder \u00b7 [APP URL]"
+    }
+   ]
+  },
+  "im-stumped": {
+   "images": {
+    "main": "im-stumped-main.png",
+    "neutral": "im-stumped-neutral.png"
+   },
+   "slots": [
+    {
+     "id": "title",
+     "x": 125,
+     "y": 90,
+     "w": 580,
+     "h": 90,
+     "align": "center",
+     "maxFont": 60,
+     "minFont": 36,
+     "maxLines": 1,
+     "text": "HELP. I'M STUMPED."
+    },
+    {
+     "id": "request",
+     "x": 150,
+     "y": 185,
+     "w": 530,
+     "h": 105,
+     "align": "center",
+     "maxFont": 28,
+     "minFont": 18,
+     "maxLines": 4,
+     "text": "I want to get you something you'll actually love. Tell me what you love, what you absolutely don't want, and what you already own. Then send your answers back to me!"
+    },
+    {
+     "id": "q1-label",
+     "x": 95,
+     "y": 392,
+     "w": 420,
+     "h": 34,
+     "maxFont": 28,
+     "minFont": 20,
+     "maxLines": 1,
+     "text": "Things I love"
+    },
+    {
+     "id": "q1-answer",
+     "x": 95,
+     "y": 432,
+     "w": 420,
+     "h": 200,
+     "maxFont": 30,
+     "minFont": 20,
+     "maxLines": 5
+    },
+    {
+     "id": "q2-label",
+     "x": 630,
+     "y": 405,
+     "w": 400,
+     "h": 34,
+     "maxFont": 28,
+     "minFont": 20,
+     "maxLines": 1,
+     "text": "Absolutely not"
+    },
+    {
+     "id": "q2-answer",
+     "x": 630,
+     "y": 445,
+     "w": 400,
+     "h": 185,
+     "maxFont": 30,
+     "minFont": 20,
+     "maxLines": 5
+    },
+    {
+     "id": "q3-label",
+     "x": 100,
+     "y": 732,
+     "w": 415,
+     "h": 34,
+     "maxFont": 28,
+     "minFont": 20,
+     "maxLines": 1,
+     "text": "Things I already own"
+    },
+    {
+     "id": "q3-answer",
+     "x": 100,
+     "y": 772,
+     "w": 415,
+     "h": 205,
+     "maxFont": 30,
+     "minFont": 20,
+     "maxLines": 5
+    },
+    {
+     "id": "q4-label",
+     "x": 630,
+     "y": 737,
+     "w": 380,
+     "h": 34,
+     "maxFont": 28,
+     "minFont": 20,
+     "maxLines": 1,
+     "text": "One little hint"
+    },
+    {
+     "id": "q4-answer",
+     "x": 630,
+     "y": 777,
+     "w": 380,
+     "h": 195,
+     "maxFont": 30,
+     "minFont": 20,
+     "maxLines": 5
+    },
+    {
+     "id": "link",
+     "x": 40,
+     "y": 1190,
+     "w": 1050,
+     "h": 50,
+     "align": "center",
+     "maxFont": 28,
+     "minFont": 18,
+     "maxLines": 1,
+     "text": "Fill it in at [COMPLETION URL]  (blank PNG: 'Print it, write on it, send a photo back.')"
+    },
+    {
+     "id": "footer",
+     "x": 40,
+     "y": 1300,
+     "w": 900,
+     "h": 56,
+     "maxFont": 26,
+     "minFont": 18,
+     "maxLines": 1,
+     "text": "Made with Orbit & Wonder \u00b7 [APP URL]"
+    }
+   ]
+  },
+  "this-or-that": {
+   "images": {
+    "main": "this-or-that-main.png",
+    "neutral": "this-or-that-neutral.png"
+   },
+   "slots": [
+    {
+     "id": "yes-heading",
+     "x": 165,
+     "y": 85,
+     "w": 200,
+     "h": 80,
+     "align": "center",
+     "maxFont": 30,
+     "minFont": 20,
+     "maxLines": 2,
+     "text": "YES, PLEASE"
+    },
+    {
+     "id": "no-heading",
+     "x": 758,
+     "y": 85,
+     "w": 205,
+     "h": 80,
+     "align": "center",
+     "maxFont": 30,
+     "minFont": 20,
+     "maxLines": 2,
+     "text": "NO, THANK YOU"
+    },
+    {
+     "id": "title",
+     "x": 405,
+     "y": 55,
+     "w": 315,
+     "h": 75,
+     "align": "center",
+     "maxFont": 48,
+     "minFont": 30,
+     "maxLines": 1,
+     "text": "This or That?"
+    },
+    {
+     "id": "subtitle",
+     "x": 405,
+     "y": 135,
+     "w": 315,
+     "h": 55,
+     "align": "center",
+     "maxFont": 24,
+     "minFont": 16,
+     "maxLines": 2,
+     "text": "My favorites. My hard no's."
+    },
+    {
+     "id": "yes-1",
+     "x": 72,
+     "y": 290,
+     "w": 425,
+     "h": 52,
+     "maxFont": 30,
+     "minFont": 20,
+     "maxLines": 1
+    },
+    {
+     "id": "yes-2",
+     "x": 72,
+     "y": 403,
+     "w": 425,
+     "h": 70,
+     "maxFont": 32,
+     "minFont": 20,
+     "maxLines": 2
+    },
+    {
+     "id": "yes-3",
+     "x": 72,
+     "y": 529,
+     "w": 425,
+     "h": 70,
+     "maxFont": 32,
+     "minFont": 20,
+     "maxLines": 2
+    },
+    {
+     "id": "yes-4",
+     "x": 72,
+     "y": 655,
+     "w": 425,
+     "h": 70,
+     "maxFont": 32,
+     "minFont": 20,
+     "maxLines": 2
+    },
+    {
+     "id": "yes-5",
+     "x": 72,
+     "y": 783,
+     "w": 425,
+     "h": 70,
+     "maxFont": 32,
+     "minFont": 20,
+     "maxLines": 2
+    },
+    {
+     "id": "yes-6",
+     "x": 72,
+     "y": 910,
+     "w": 425,
+     "h": 70,
+     "maxFont": 32,
+     "minFont": 20,
+     "maxLines": 2
+    },
+    {
+     "id": "yes-7",
+     "x": 72,
+     "y": 1036,
+     "w": 425,
+     "h": 70,
+     "maxFont": 32,
+     "minFont": 20,
+     "maxLines": 2
+    },
+    {
+     "id": "no-1",
+     "x": 626,
+     "y": 290,
+     "w": 425,
+     "h": 52,
+     "maxFont": 30,
+     "minFont": 20,
+     "maxLines": 1
+    },
+    {
+     "id": "no-2",
+     "x": 632,
+     "y": 403,
+     "w": 420,
+     "h": 70,
+     "maxFont": 32,
+     "minFont": 20,
+     "maxLines": 2
+    },
+    {
+     "id": "no-3",
+     "x": 632,
+     "y": 529,
+     "w": 420,
+     "h": 70,
+     "maxFont": 32,
+     "minFont": 20,
+     "maxLines": 2
+    },
+    {
+     "id": "no-4",
+     "x": 632,
+     "y": 655,
+     "w": 420,
+     "h": 70,
+     "maxFont": 32,
+     "minFont": 20,
+     "maxLines": 2
+    },
+    {
+     "id": "no-5",
+     "x": 632,
+     "y": 783,
+     "w": 420,
+     "h": 70,
+     "maxFont": 32,
+     "minFont": 20,
+     "maxLines": 2
+    },
+    {
+     "id": "no-6",
+     "x": 632,
+     "y": 910,
+     "w": 420,
+     "h": 70,
+     "maxFont": 32,
+     "minFont": 20,
+     "maxLines": 2
+    },
+    {
+     "id": "no-7",
+     "x": 632,
+     "y": 1036,
+     "w": 420,
+     "h": 70,
+     "maxFont": 32,
+     "minFont": 20,
+     "maxLines": 2
+    },
+    {
+     "id": "opening",
+     "x": 40,
+     "y": 1262,
+     "w": 850,
+     "h": 48,
+     "maxFont": 28,
+     "minFont": 18,
+     "maxLines": 1,
+     "text": "[opening line]"
+    },
+    {
+     "id": "footer",
+     "x": 40,
+     "y": 1325,
+     "w": 850,
+     "h": 44,
+     "maxFont": 24,
+     "minFont": 16,
+     "maxLines": 1,
+     "text": "Made with Orbit & Wonder \u00b7 [APP URL]"
+    }
+   ]
+  }
+ }
+}

@@ -6,14 +6,14 @@ import { ProfileExpander } from "./profile-expansion";
 import { RefusalExpander } from "./refusals";
 import { TasteCache } from "./taste-cache";
 import { KINDS, type QualityCandidate } from "./quality";
-import { normal } from "./rules";
+import { passesRules } from "./rules";
 import { TEST_PROFILES } from "./test-profiles";
 import { resolveLove, searchWikipedia } from "./wikipedia";
 
 // Contract-only synthetic transport. These are NEVER used by app routes or
 // reported as real Claude sample runs / semantic-quality evidence.
 const resolver: typeof resolveLove = async love => ({ love, selected: null, candidates: [] });
-function fixtures(loves: string[]): QualityCandidate[] {
+function fixtures(loves: string[], budgetMin: number, budgetMax: number): QualityCandidate[] {
   const [a, b] = loves;
   return KINDS.flatMap((kind, i) => [0, 1].map(variant => {
     const suffix = {
@@ -24,7 +24,7 @@ function fixtures(loves: string[]): QualityCandidate[] {
     return {
       title: `${a} ${b} ${suffix} ${variant}`, category: suffix, colours: ["black", "cream"],
       brand: "", materials: kind === "consumable" ? ["cocoa", "flour"] : ["wood", "ceramic"],
-      priceMin: 30, priceMax: 40, whereToLook: "specialist shops",
+      priceMin: budgetMin, priceMax: Math.min(budgetMin + 10, budgetMax), whereToLook: "specialist shops",
       kind, sourceLoves: [a, b], sourceDetails: [{ love: a, detail: a }, { love: b, detail: b }],
       contextType: "none", contextValue: "", contextDetail: "", maker: "",
       namedItem: kind === "collectible" ? "Collector Archive Edition 7" : "", handmade: kind === "maker",
@@ -43,7 +43,7 @@ function fakeSession(hook?: (stage: ClaudeStage, data: any, response: any) => an
         love: r.love, specifics: ["test-specific detail"], eras: [], subgenres: [], adjacent: [], aesthetics: [], signatureObjects: [], places: [],
       })) };
       if (stage === "refusals") response = { refusals: data.refusals.map((r: string) => ({ refusal: r, terms: [r, r.includes("pink") ? "carnation" : r] })) };
-      if (stage === "generation") response = { ideas: fixtures(data.expandedProfile.loves.map((l: any) => l.love)) };
+      if (stage === "generation") response = { ideas: fixtures(data.expandedProfile.loves.map((l: any) => l.love), data.budgetMin, data.budgetMax) };
       if (stage === "critic") response = { scores: data.candidates.map((c: any, i: number) => ({
         id: c.id, specificity: i % 2 ? 5 : 4, combination: 5, budget: 5, novelty: 5, kindFit: 5,
         pass: true, duplicateOf: null, issues: [],
@@ -53,7 +53,8 @@ function fakeSession(hook?: (stage: ClaudeStage, data: any, response: any) => an
   };
 }
 for (const profile of TEST_PROFILES) {
-  test(`fixed profile contract: ${profile.name}`, { skip: !profile.input && "Director's Wolfboy details pending" }, async () => {
+  test(`fixed profile contract: ${profile.name}`, async () => {
+    assert.ok(profile.input, "A required fixed-profile fixture is missing");
     const result = await generate(profile.input!, { claude: fakeSession(), profiles: new ProfileExpander(resolver), refusals: new RefusalExpander() });
     assert.equal(result.ideas.length, 6);
     assert.deepEqual(result.ideas.map(g => g.kind), [...KINDS]);
@@ -81,6 +82,13 @@ test("refusal edits expand only the newly added refusal", async () => {
   await refusals.get(["pink", "Microsoft"], next);
   assert.deepEqual(seen, [["Microsoft"]]);
   assert.equal(next.calls.refusals, 1);
+});
+test("Wolfboy's pop music and Crunch Fitness refusals preserve their meaning, not unrelated homonyms", () => {
+  const gift = fixtures(["wolfman", "Universal Monsters"], 50, 150)[0];
+  const refusals = TEST_PROFILES.find(p => p.name === "Wolfboy")!.input!.refusals;
+  assert.equal(passesRules({ ...gift, title: "Funko Pop! Universal Monsters Wolfman figure" }, refusals, "", []), true);
+  assert.equal(passesRules({ ...gift, title: "pop music compilation CD" }, refusals, "", []), false);
+  assert.equal(passesRules({ ...gift, title: "Crunch Fitness membership" }, refusals, "", []), false);
 });
 test("expanded hard-no hits are removed; retries get precise failures and fill the missing kind", async () => {
   const session = fakeSession((stage, data, response) => {

@@ -20,9 +20,14 @@ function contains(haystack: string, needle: string) {
   return (` ${haystack} `).includes(` ${needle} `);
 }
 export function refusalTerms(rule: string): string[] {
-  const clean = normal(rule).replace(/\b(nothing|anything|no|not|never|the|colour|color|colours|colors|made|of|from|with|a|an|or|and|please|whole|category)\b/g, " ").replace(/\s+/g, " ").trim();
-  const parts = clean.split(" ").filter(Boolean);
-  return [...new Set([clean, ...parts, ...parts.flatMap(p => aliases[p] ?? [p, p.endsWith("s") ? p.slice(0, -1) : `${p}s`])])].filter(Boolean);
+  const clauses = normal(rule).split(/\b(?:or|and)\b/).map(clause =>
+    clause.replace(/\b(nothing|anything|no|not|never|the|colour|color|colours|colors|made|of|from|with|a|an|please|whole|category)\b/g, " ").replace(/\s+/g, " ").trim()).filter(Boolean);
+  return [...new Set(clauses.flatMap(clean => {
+    const parts = clean.split(" ");
+    // Preserve multiword meaning: "pop music" is not Funko Pop, and Crunch
+    // Fitness is not every fitness activity. Known aliases still expand safely.
+    return [clean, ...parts.flatMap(p => aliases[p] ?? (parts.length === 1 ? [p, p.endsWith("s") ? p.slice(0, -1) : `${p}s`] : []))];
+  }))].filter(Boolean);
 }
 export function passesRules(gift: Candidate, refusals: string[], owned: string, rejected: { title: string; reason: string }[], expandedTerms: readonly string[] = []): boolean {
   // Positive-only metadata is required from the model; "not pink" is not accepted as proof.

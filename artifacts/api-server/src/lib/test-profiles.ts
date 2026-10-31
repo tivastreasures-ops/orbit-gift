@@ -13,9 +13,16 @@ export const TEST_PROFILES: TestProfile[] = [
       occasion: "Birthday", relationship: "Friend", budgetMin: 15, budgetMax: 90,
     },
   },
-  // No Wolfboy details were in the supplied spec/repository. Never fabricate
-  // the Director's profile; fill this only with her confirmed test parameters.
-  { name: "Wolfboy", input: null },
+  {
+    name: "Wolfboy",
+    input: {
+      recipientId: "fixture-wolfboy",
+      relationship: "Partner", occasion: "Birthday", budgetMin: 50, budgetMax: 150,
+      loves: ["wolfman", "Frankenstein's Monster", "Universal Monsters", "DC Universe", "Marvel Universe", "Avengers", "turquoise"],
+      refusals: ["anime", "salads", "pop music", "pink", "Crunch Fitness"],
+      owned: "",
+    },
+  },
   {
     name: "Mira (easy)",
     input: {

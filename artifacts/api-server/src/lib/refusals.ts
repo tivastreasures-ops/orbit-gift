@@ -20,7 +20,7 @@ export class RefusalExpander {
     // The single batch promise is created lazily only if an individual term misses.
     const batch = () => this.batches.get(cacheKey(["refusals-v1", missing.map(normal).sort(), claude.helperModel]), async () => {
       const data = resultSchema.parse(await claude.json("refusals",
-        `Expand each refusal into closely related exclusion terms: colours into shades (pink -> rose, blush, fuchsia, magenta), companies into brands/products (Microsoft -> Windows, Xbox, Surface, Office). Preserve every original refusal. Use specific names and related materials/products, not broad unrelated nouns, stopwords or extra preferences. Never soften a refusal. Return {"refusals":[{"refusal":"EXACT supplied text","terms":["..."]}]}, exactly once for each refusal.`,
+        `Expand each refusal into closely related exclusion terms: colours into shades (pink -> rose, blush, fuchsia, magenta), companies into brands/products (Microsoft -> Windows, Xbox, Surface, Office). Preserve every original refusal. Preserve multiword meaning: "pop music" does NOT exclude Funko Pop or unrelated music; "Crunch Fitness" does NOT exclude all fitness or crunchy food. Do not output isolated pop/music/crunch/fitness for those phrases. Use specific names and related materials/products, not broad unrelated nouns, stopwords or extra preferences. Never soften a refusal. Return {"refusals":[{"refusal":"EXACT supplied text","terms":["..."]}]}, exactly once for each refusal.`,
         { refusals: missing }));
       if (data.refusals.length !== missing.length ||
           new Set(data.refusals.map(r => normal(r.refusal))).size !== missing.length ||

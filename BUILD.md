@@ -107,9 +107,11 @@ Giver-only profile/returned-answer headings: `Things they love`, `Hard no's`, `A
 - Phone browser review and requested Results/Keepers screenshots are recorded in the handoff. This is not a physical Android sharing or full three-round acceptance claim.
 - The focused 402×874 Results→Keepers browser pass confirmed star/asteroid tap details, source-chip selection without triggering card controls, saving, universe counts/gold source stars, profile retention and keeper persistence after reload. Transient source selection intentionally resets on reload. Neither page had horizontal overflow. Qloo's backup notice denotes the real LLM-only adapter, not mock gift data.
 
-## Share-card artwork status
+## Share-card artwork status before approval (historical)
 
 **All card artwork remains temporary blank slots.** Eight final files (four main and four neutral) must be uploaded and explicitly approved by the Director before integration. No AI art was generated; no substitute final illustration was commissioned. Live text placement is provisional until the backgrounds arrive.
+
+**Superseded:** the Director subsequently supplied and approved the eight final PNGs and slot map. The final integration record below is current.
 
 Final art must have blank live-text/footer areas and original constellation signature. Palette refusals apply to the entire exported card. Neutral selection must preserve Hinterwelle's no-pink constraint; if a neutral palette colour itself is refused, do not assume that neutral is automatically eligible.
 
@@ -187,29 +189,61 @@ Taste expansions use bounded six-hour in-memory caches keyed by profile identity
 - Wikipedia typeahead: **0 Claude calls**. Actual successful search counts, stages, cache status and model names appear in the API's `diagnostics`; no credential or prompt is included.
 - `pnpm test:gifts` runs deterministic contract/profile tests. It also runs before every API build. Fixtures are deliberately simulated test transports, never runtime substitutions or semantic/model-quality evidence.
 - `pnpm test:gifts:live` performs real fixed-profile calls, writes the marked table below and fails on missing keys, missing fixtures or incomplete rounds. Run both commands after subsequent changes; never present a blocked live run as a pass.
-- Fixed profiles: original Hinterwelle loves/no's (synthetic test budget $15–$90, Friend/Birthday, ownership of every Joy Division record); **Wolfboy awaiting the Director's actual parameters**; fictional Mira (easy: birdwatching/lemon baking/ceramics/botanical gardens); fictional Sol (sparse: sourdough baking/astronomy). Full fixture constraints are in source.
+- Fixed profiles: original Hinterwelle loves/no's (synthetic test budget $15–$90, Friend/Birthday, ownership of every Joy Division record); Director-confirmed Wolfboy (Partner/Birthday, $50–$150; wolfman, Frankenstein's Monster, Universal Monsters, DC Universe, Marvel Universe, Avengers, turquoise; no anime, salads, pop music, pink or Crunch Fitness; nothing listed as owned); fictional Mira (easy: birdwatching/lemon baking/ceramics/botanical gardens); fictional Sol (sparse: sourdough baking/astronomy). Full fixture constraints are in source.
 
 ### Verification and boundaries
 
-- Latest deterministic run: **27 passed, 0 failed, 1 skipped** (Wolfboy parameters pending). Workspace TypeScript checks and production Vite build passed; both workflows start cleanly.
+- Workspace TypeScript checks and production Vite build passed; both workflows start cleanly. The latest deterministic count is recorded in the handoff after adding Wolfboy.
 - Real HTTP checks: Wikipedia taste lookup returned Okkervil River as `band` and Okkervil as `river` with HTTP 200. A keyless gift request returned HTTP 503 and the existing “Lost the signal. Check your connection and try again.” copy, with no alternate-provider generation.
 - Deterministic tests cover three defined fixed profiles, best-of-two selection per kind, four-to-two call cache reuse, profile invalidation, only-new-refusal expansion, forbidden-candidate replacement with exact repair feedback, critic failure/duplicate gating, feedback forwarding, failed-cache eviction, invented-source rejection, direct Anthropic-only transport and missing-key/no-fallback behavior.
 - Wikipedia's real anonymous API returned both Okkervil River (band) and Okkervil (river). A regression test now preserves search ranking and classifies the definition rather than mistakenly matching “River” inside the band's proper name.
-- Live Claude samples for Hinterwelle/Wolfboy cannot be supplied until a key is available and Wolfboy's profile is specified. The table below records the actual blocked status and zero calls.
+- Wolfboy's multiword hard no's preserve their meaning: pop music is not Funko Pop, and Crunch Fitness is not all fitness. Original full phrases and recognized hard-no aliases remain mandatory; helper expansion is instructed not to add those unrelated homonyms.
+- Live Claude samples for Hinterwelle/Wolfboy cannot be supplied until a key is available. The table below records the actual blocked status and zero calls.
 - All eight share-card art slots and the share-card renderer remain untouched. No new interface copy was invented.
 
 <!-- CLAUDE_PROFILE_EVAL -->
-### Fixed-profile live evaluation — 2026-10-31T03:23:56.110Z
+### Fixed-profile live evaluation — 2026-10-31T03:35:41.022Z
 
 Model: `claude-sonnet-5-5`; helper: `claude-sonnet-5-5`.
 
 | Profile | Live result | Claude calls | Accepted kinds |
 | --- | --- | ---: | --- |
 | Hinterwelle | BLOCKED: ANTHROPIC_API_KEY missing | 0 | — |
-| Wolfboy | BLOCKED: Director profile details pending | 0 | — |
+| Wolfboy | BLOCKED: ANTHROPIC_API_KEY missing | 0 | — |
 | Mira (easy) | BLOCKED: ANTHROPIC_API_KEY missing | 0 | — |
 | Sol (sparse: two loves) | BLOCKED: ANTHROPIC_API_KEY missing | 0 | — |
 
 
 No simulated output is counted as a live run. Deterministic transport fixtures are a separate contract test, not a semantic-quality evaluation.
 <!-- /CLAUDE_PROFILE_EVAL -->
+
+## Director-approved final share-card art integration
+
+### Exact source assets and storage
+
+- Integrated exactly the supplied Secret Santa, All I Want, I'm Stumped and This or That main/neutral PNGs: eight files, each **1122×1402**. No substitute, generated image, crop, palette editing or illustration change was used.
+- The large source PNGs are retained in **App Storage**, not added to Git or deployment bundles. The server manifest records each filename, SHA-256, dimensions, byte count and immutable object key. Every upload was downloaded again and its SHA-256 compared with the original bytes.
+- Read-only `/api/card-art/{filename}` serves an allowlist of these eight public backgrounds, with ETags and cache headers. There is no public upload route or new accounts/database. Missing art fails with existing approved error copy rather than silently rendering blank.
+- `src/lib/card-slots.json` is a byte-for-byte copy of the supplied `slots.json`; this map supersedes the old provisional geometry and static card headings.
+
+### Text and layout
+
+- Every title/heading/label uses **Josefin Sans** (300 for titles, 600 for headings/labels); entries/footer use **DM Sans 400**, in dark charcoal `#2C2A27`. Rendering waits for actual loaded fonts and fails instead of silently substituting.
+- Coordinates scale from the 1122×1402 source to the 1080×1350 portrait. Each box starts at its maximum font, shrinks to its minimum, wraps to the permitted line/height limit, then ellipsizes. Grapheme-aware splitting handles unbroken strings; measured ink bearings are included. Each slot is also clipped as a final safety boundary.
+- Secret Santa maps three loves, three rather-nots and budget to the lined boxes, with the approved small labels. Drop a hint suppresses both budget text and label.
+- All I Want maps four wishes above the art lines and exact `Because... ` prefixes below. An already-typed prefix is not duplicated.
+- This or That now has **seven editable/prefilled slots per column**. The title/subtitle occupy the centre gap between heading ovals; opening/footer use the bottom band.
+- I'm Stumped uses the JSON's exact cloud title/request and four bubble labels/answers. The strip contains a template-only completion URL, or the approved blank-PNG sentence. URLs never contain the giver's profile or answers.
+- The approved map contains no name slot. Removed the now-inactive share/completion name controls rather than inventing a text box or printing a saved private name. `RenderOpts.name` remains for source compatibility but is not drawn.
+- Main-art colour refusals select the exact neutral image; both profiles' pink refusal selects neutral. Neutral is not assumed colourless: All I Want has pale blue/silver, and the neutral Stumped/This or That art contains mustard/yellow/gold. A conflicting neutral colour or square navy-background refusal fails closed; images are never recoloured.
+- A **1080×1080 square contains the whole portrait**, scaled to 864×1080 at x=108 on the deterministic starry app background. No crop, no alternate layout and no missing bottom band.
+
+### Verification and supplied review renders
+
+- `pnpm test:card-art`: **48 exported PNG cases passed, zero measured text overflows** — four templates × Hinterwelle/Wolfboy/long-text stress × main/neutral × portrait/square.
+- All 24 squares were compared pixel-for-pixel against the corresponding complete portrait scaled to 864×1080; all comparisons passed.
+- Checks also confirmed dimensions, exact Stumped request/blank/link text, seventh Wolfboy love (`turquoise`), hint-budget suppression, ellipsis under stress, conservative pink-neutral selection and a real browser PNG download event.
+- Visually inspected the rendered portraits, including seven-row This or That, Santa lined boxes, cloud request/bubbles and footers. No claim of physical Android native sharing is made.
+- Eight requested portrait review files use Wolfboy's supplied profile: four forced-main review variants and four neutral variants. Forced main is **QA only** so both approved images can be reviewed; ordinary user export still selects neutral for this profile's pink refusal.
+- The 48 PNGs and detailed placement report are generated output in ignored `generated-artifacts/card-art/`, not Git. The reproducible runner is committed as `pnpm test:card-art`.
+- Workspace TypeScript checks and production Vite build passed. The fixed gift-profile suite includes the Director's complete Wolfboy parameters. Live Claude runs remain explicitly blocked by the missing `ANTHROPIC_API_KEY`; no other provider was called.

@@ -8,7 +8,7 @@ Tell us what they love. Tell us what they'd never be caught dead with. We'll fin
 
 A mobile-first gift finder with several device-local recipient profiles, matched love/refusal chips, six rule-checked ideas per round, feedback, saved lists, and four downloadable/shareable wish-list card templates. No accounts, database, tracking, product purchasing, or automatic PNG import.
 
-Names, headings, labels, and card footers are live text. Approved share-card artwork has **not** been supplied: all eight background slots are intentionally blank. Do not replace them with generated or stock artwork.
+Headings, labels, entries and card footers are live text. All eight Director-approved backgrounds are integrated unchanged from the supplied PNGs, with the supplied `slots.json` controlling text geometry. Do not substitute or regenerate the art.
 
 ## Stack
 
@@ -64,7 +64,7 @@ The Director's quality contract also rejects generic merch without a named item/
 
 Derived expansions live only in bounded server-memory caches for six hours; edits/model changes invalidate their keys, refusal edits expand only new terms, and a restart clears them. Profiles, keepers and accumulated More like this seeds remain device-local. With refusals, a cold successful round normally uses four Claude calls (taste expansion, refusal expansion, generation, critic); a fully cached round uses two. Up to three generation/critic pairs means at most eight cold or six warm calls. Wikipedia typeahead uses zero Claude calls. Actual per-search counts are returned in `diagnostics`.
 
-Run `pnpm test:gifts` after every change (also runs before API builds). These deterministic transport fixtures test the contract, not model quality. Run `pnpm test:gifts:live` with a valid key for real fixed-profile evaluation; it updates the marked `BUILD.md` table and exits nonzero for missing credentials, missing profile details or incomplete rounds. It never substitutes mocked gifts. Wolfboy awaits the Director's actual profile; the easy/sparse fictional fixtures are Mira and Sol.
+Run `pnpm test:gifts` after every change (also runs before API builds). These deterministic transport fixtures test the contract, not model quality. Run `pnpm test:gifts:live` with a valid key for real fixed-profile evaluation; it updates the marked `BUILD.md` table and exits nonzero for missing credentials, missing profile details or incomplete rounds. It never substitutes mocked gifts. Hinterwelle and Wolfboy use the Director's test loves/no's; the easy/sparse fictional fixtures are Mira and Sol.
 
 Results and Keepers show an interactive, device-local planet/love constellation with a labelled no-list asteroid belt. Source chips highlight only exact known source stars; unknown/legacy-unresolvable sources use the approved whole-sky fallback. Keepers' gold stars support saved gifts, and its lavender stars remain unexplored.
 
@@ -72,9 +72,15 @@ Natural-language refusal matching is conservative token/alias matching, not a co
 
 ## Share cards and privacy
 
-Secret Santa, All I Want for Christmas, I'm Stumped, and This or That support portrait 1080×1350 and square 1080×1080 exports. The canvas reflows the layout for each size; square is not a truncated portrait.
+Secret Santa, All I Want for Christmas, I'm Stumped, and This or That support portrait 1080×1350 and square 1080×1080 exports. A square contains the complete portrait at 864×1080, centred at x=108 on the app's starry background: no crop or reflow.
 
-Public hints omit budget and begin with a blank display-name choice, not a saved full profile name. Preview omissions do not modify saved preferences. Art selection respects palette refusals; all current art slots remain blank pending approval.
+Public hints omit the budget and its label. No name is drawn because the approved slot map has no name box; unused name controls were removed rather than inventing a position. Preview omissions do not modify saved preferences. Art selection switches to neutral for refused main-art colours. If the neutral image or the mandated square background also conflicts, export fails using existing error copy rather than recolouring approved art.
+
+The eight exact 1122×1402 source PNGs live in App Storage, not Git. Their hashes/objects are recorded in the server's card-art manifest and served through the read-only `/api/card-art/{filename}` allowlist. There is no anonymous upload endpoint, account system or recipient storage. The operator import script verifies PNG dimensions and a full SHA-256 download round-trip; it never processes the pixels.
+
+Text follows the supplied source-pixel boxes, font limits and line limits: Josefin Sans for titles/headings/labels, DM Sans for entries/footer, dark charcoal ink, shrinking/wrapping/ellipsis with explicit per-box clipping. This or That has seven rows per column. I'm Stumped uses the exact cloud request and the completion-link/blank-PNG strip.
+
+`pnpm test:card-art` runs the actual browser canvas renderer against Hinterwelle, Wolfboy and a long-text stress case, with both versions and sizes (48 exported PNG cases). It checks measured ink bounds, exact request/blank copy, seven-row mapping, hidden hint budget, native PNG download and a pixel-for-pixel comparison proving square containment. Review-only forced variants are not connected to the app UI. Generated PNGs/report stay in ignored `generated-artifacts/card-art/`; the app's normal export always applies refusal checks.
 
 Only I'm Stumped has a fillable link. That URL contains a template identifier, never a profile or preferences. It opens a blank editor without an account, server storage, or sync. Completed PNGs are returned through the phone share sheet or download; the giver enters the returned answers manually.
 

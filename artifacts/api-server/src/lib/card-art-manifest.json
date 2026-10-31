@@ -1,0 +1,58 @@
+{
+  "secret-santa-main.png": {
+    "object": "orbit-gift/card-art/432d9b70cae9ec3305b2fed81c3c53aa80a57b5f11db4b7b71a7c0c3c07b71c6/secret-santa-main.png",
+    "sha256": "432d9b70cae9ec3305b2fed81c3c53aa80a57b5f11db4b7b71a7c0c3c07b71c6",
+    "width": 1122,
+    "height": 1402,
+    "bytes": 2632496
+  },
+  "secret-santa-neutral.png": {
+    "object": "orbit-gift/card-art/e250a622991e19eb0e3f5cb9420cb6f406f69b8ec7e512adfde21f3afcb73d46/secret-santa-neutral.png",
+    "sha256": "e250a622991e19eb0e3f5cb9420cb6f406f69b8ec7e512adfde21f3afcb73d46",
+    "width": 1122,
+    "height": 1402,
+    "bytes": 2421927
+  },
+  "all-i-want-main.png": {
+    "object": "orbit-gift/card-art/89248f772159280c772d1748259db9ecec9236be87cb7575ba8552d0f021f541/all-i-want-main.png",
+    "sha256": "89248f772159280c772d1748259db9ecec9236be87cb7575ba8552d0f021f541",
+    "width": 1122,
+    "height": 1402,
+    "bytes": 2351801
+  },
+  "all-i-want-neutral.png": {
+    "object": "orbit-gift/card-art/5e8d5c4b7c142e505fdcd0314ceba2915ddea850657a6f372ce8316b5e4513f8/all-i-want-neutral.png",
+    "sha256": "5e8d5c4b7c142e505fdcd0314ceba2915ddea850657a6f372ce8316b5e4513f8",
+    "width": 1122,
+    "height": 1402,
+    "bytes": 1913998
+  },
+  "im-stumped-main.png": {
+    "object": "orbit-gift/card-art/b8901c84529af465808a17c385496b7f62bc8bbb22f096f8e0d3ff4c183e0abc/im-stumped-main.png",
+    "sha256": "b8901c84529af465808a17c385496b7f62bc8bbb22f096f8e0d3ff4c183e0abc",
+    "width": 1122,
+    "height": 1402,
+    "bytes": 1769606
+  },
+  "im-stumped-neutral.png": {
+    "object": "orbit-gift/card-art/a62349b6e38cc1803a89cb716ab2b703983cd46074deed464fc0c94b48de15ba/im-stumped-neutral.png",
+    "sha256": "a62349b6e38cc1803a89cb716ab2b703983cd46074deed464fc0c94b48de15ba",
+    "width": 1122,
+    "height": 1402,
+    "bytes": 1828163
+  },
+  "this-or-that-main.png": {
+    "object": "orbit-gift/card-art/334b927999b802003426740eaa1804d04faf364667c84558d4a0d574966b511e/this-or-that-main.png",
+    "sha256": "334b927999b802003426740eaa1804d04faf364667c84558d4a0d574966b511e",
+    "width": 1122,
+    "height": 1402,
+    "bytes": 1962331
+  },
+  "this-or-that-neutral.png": {
+    "object": "orbit-gift/card-art/cee1fbd15dc1e771c60f8e1206ae3da6f0a7e7fab91e293eef0872911958d2e4/this-or-that-neutral.png",
+    "sha256": "cee1fbd15dc1e771c60f8e1206ae3da6f0a7e7fab91e293eef0872911958d2e4",
+    "width": 1122,
+    "height": 1402,
+    "bytes": 1988032
+  }
+}

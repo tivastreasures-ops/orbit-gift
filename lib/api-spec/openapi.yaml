@@ -11,6 +11,26 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /card-art/{filename}:
+    get:
+      operationId: getCardArt
+      summary: Exact Director-approved public share-card background
+      parameters:
+        - in: path
+          name: filename
+          required: true
+          schema:
+            type: string
+            enum: [secret-santa-main.png, secret-santa-neutral.png, all-i-want-main.png, all-i-want-neutral.png, im-stumped-main.png, im-stumped-neutral.png, this-or-that-main.png, this-or-that-neutral.png]
+      responses:
+        "200":
+          description: Approved PNG image, without transformations
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        "304": { description: Unchanged approved image }
+        "404": { description: Unknown card-art slot }
+        "503": { description: Art storage unavailable }
   /taste/search:
     post:
       operationId: searchTaste

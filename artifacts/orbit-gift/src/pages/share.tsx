@@ -41,11 +41,11 @@ export default function SharePage() {
   const [template, setTemplate] = useState<TemplateId | null>(null);
   const [source, setSource] = useState('');
   const [fields, setFields] = useState<CardFields>(emptyFields);
-  const [name, setName] = useState('');
   const [showBudget, setShowBudget] = useState(false);
   const [size, setSize] = useState<Size>('portrait');
   const [omit, setOmit] = useState<Set<string>>(new Set());
   const [preview, setPreview] = useState<{ url: string; neutral: boolean } | null>(null);
+  const [previewError, setPreviewError] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const recommended = purpose ? PURPOSE_TEMPLATES[purpose] : [];
@@ -74,7 +74,7 @@ export default function SharePage() {
       santa: { loves: pad(loves, 3), nos: pad(nos, 3), budget: hasBudget ? `${r.budgetMin}–${r.budgetMax}` : '' },
       wish: { wishes: [0, 1, 2, 3].map((i) => ({ wish: saved[i]?.title ?? '', because: saved[i]?.because ?? '' })) },
       stumped: emptyFields().stumped,
-      tot: { yes: pad(loves, 6), no: pad(nos, 6) },
+      tot: { yes: pad(loves, 7), no: pad(nos, 7) },
     });
   };
 
@@ -96,7 +96,7 @@ export default function SharePage() {
             size,
             fields,
             omit,
-            name,
+            name: '',
             showBudget: purpose === 'list' && showBudget,
             refusals,
             appName: settings.appName,
@@ -104,7 +104,7 @@ export default function SharePage() {
             completionUrl: completionUrl(),
           }
         : null,
-    [t, purpose, mode, size, fields, omit, name, showBudget, refusals, settings.appName],
+    [t, purpose, mode, size, fields, omit, showBudget, refusals, settings.appName],
   );
 
   useEffect(() => {
@@ -113,9 +113,13 @@ export default function SharePage() {
     const timer = window.setTimeout(async () => {
       try {
         const r = await renderCard(opts);
+        if (alive) setPreviewError(false);
         if (alive) setPreview({ url: r.canvas.toDataURL('image/png'), neutral: r.neutral });
       } catch {
-        /* preview is best effort */
+        if (alive) {
+          setPreview(null);
+          setPreviewError(true);
+        }
       }
     }, 140);
     return () => {
@@ -226,11 +230,6 @@ export default function SharePage() {
               </label>
             )}
 
-            <div>
-              <label className="label" htmlFor="card-name">{COPY.share.nameLabel}</label>
-              {purpose === 'hint' && <p className="text-sm text-muted-foreground -mt-1 mb-2">{COPY.share.nameHelper}</p>}
-              <input id="card-name" className="field" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} data-testid="input-card-name" />
-            </div>
 
             {mode === 'filled' && t === 'santa' && (
               <div className="glass rounded-3xl p-5 space-y-4">
@@ -294,6 +293,7 @@ export default function SharePage() {
           <div className="lg:sticky lg:top-6 space-y-4">
             <div className="flex justify-center"><SizePicker size={size} onChange={setSize} /></div>
             <PreviewImage url={preview?.url ?? null} size={size} alt={TEMPLATE_NAMES[t]} />
+            {previewError && <p className="text-sm text-center text-violet" role="alert" data-testid="text-preview-error">{COPY.errors.broke}</p>}
             {preview?.neutral && (
               <p className="text-sm text-center text-violet" role="status" data-testid="text-neutral-note">{COPY.share.neutral}</p>
             )}

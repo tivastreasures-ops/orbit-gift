@@ -12,7 +12,6 @@ import { appUrl, canvasToFile, downloadFile, emptyFields, renderCard, shareOrDow
  */
 export default function CompletePage() {
   const [vals, setVals] = useState<CardFields['stumped']>(emptyFields().stumped);
-  const [name, setName] = useState('');
   const [size, setSize] = useState<Size>('portrait');
   const [made, setMade] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -28,7 +27,7 @@ export default function CompletePage() {
     size,
     fields: { ...emptyFields(), stumped: vals },
     omit: new Set<string>(),
-    name,
+    name: '',
     showBudget: false,
     refusals: [vals.no],
     appName,
@@ -43,15 +42,19 @@ export default function CompletePage() {
     if (!made) return;
     let alive = true;
     const timer = window.setTimeout(async () => {
-      const r = await renderCard(opts());
-      if (alive) setPreview(r.canvas.toDataURL('image/png'));
+      try {
+        const r = await renderCard(opts());
+        if (alive) { setPreview(r.canvas.toDataURL('image/png')); setNote(null); }
+      } catch {
+        if (alive) { setPreview(null); setNote(COPY.errors.broke); }
+      }
     }, 120);
     return () => {
       alive = false;
       window.clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [made, vals, name, size]);
+  }, [made, vals, size]);
 
   const exportPng = async (how: 'share' | 'download' | 'blank') => {
     setBusy(true);
@@ -110,10 +113,6 @@ export default function CompletePage() {
                 <textarea id={`c-${k}`} rows={k === 'hint' ? 2 : 3} className="field resize-y" value={vals[k]} maxLength={400} onChange={(e) => setVals((v) => ({ ...v, [k]: e.target.value }))} data-testid={`input-complete-${k}`} />
               </div>
             ))}
-            <div>
-              <label className="label" htmlFor="c-name">{COPY.share.nameLabel}</label>
-              <input id="c-name" className="field" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} data-testid="input-complete-name" />
-            </div>
             <button type="submit" className="btn btn-gold px-8 min-h-[54px]" data-testid="button-make-card">{COPY.complete.make}</button>
              <button type="button" className="btn btn-ghost ml-2" disabled={busy} onClick={() => void exportPng('blank')} data-testid="button-complete-blank">
                <Download className="w-4 h-4" />{COPY.share.blank}
