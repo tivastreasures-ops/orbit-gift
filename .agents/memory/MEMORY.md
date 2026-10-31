@@ -1,2 +1,2 @@
 - [Director approval rules](director-approval.md) — direct Claude only, exact copy, approved eight-image art/slots set, no accounts/database in MVP.
-- [Gift quality constraints](gift-quality.md) — preserve the six-kind/two-interest gates; use stronger generation and explicit repair feedback, not weaker checks.
+- [Gift quality constraints](gift-quality.md) — critic judges meaning; strict objective exclusions, partial results, two-round cap and one live run per fixed profile.

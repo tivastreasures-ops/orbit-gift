@@ -27,6 +27,7 @@ export class RefusalExpander {
           missing.some(r => !data.refusals.some(x => normal(x.refusal) === normal(r)))) throw new Error("Refusal expansion contract failed");
       return new Map(data.refusals.map(r => [normal(r.refusal), r.terms.map(normal).filter(t => t.length >= 2)]));
     });
+    try {
     const rows = await Promise.all(unique.map(async refusal => {
       const result = await this.values.get(termKey(refusal), async () =>
         (await batch()).value.get(normal(refusal))!);
@@ -34,6 +35,12 @@ export class RefusalExpander {
       return [...refusalTerms(refusal), ...result.value];
     }));
     return { terms: [...new Set(rows.flat())], hits };
+    } catch (error) {
+      // Preserve every literal refusal and all deterministic aliases. A helper
+      // outage never disables the mandatory code check or invents preferences.
+      console.warn("Refusal expansion failed; retaining strict original/known-alias checks:", error instanceof Error ? error.message : String(error));
+      return { terms: [...new Set(unique.flatMap(refusalTerms))], hits: 0 };
+    }
   }
 }
 export const refusalExpander = new RefusalExpander();

@@ -44,9 +44,9 @@ function fakeSession(hook?: (stage: ClaudeStage, data: any, response: any) => an
       })) };
       if (stage === "refusals") response = { refusals: data.refusals.map((r: string) => ({ refusal: r, terms: [r, r.includes("pink") ? "carnation" : r] })) };
       if (stage === "generation") response = { ideas: fixtures(data.expandedProfile.loves.map((l: any) => l.love), data.budgetMin, data.budgetMax) };
-      if (stage === "critic") response = { scores: data.candidates.map((c: any, i: number) => ({
-        id: c.id, specificity: i % 2 ? 5 : 4, combination: 5, budget: 5, novelty: 5, kindFit: 5,
-        pass: true, duplicateOf: null, issues: [],
+      if (stage === "critic") response = { verdicts: data.candidates.map((c: any) => ({
+        id: c.id, kind: c.gift.kind, isSpecific: true, sourcesUsed: c.gift.sourceLoves,
+        pass: true, duplicateOf: null, reason: "Specific and meaningfully combines the supplied tastes",
       })) };
       return hook ? hook(stage, data, response) : response;
     },
@@ -56,9 +56,8 @@ for (const profile of TEST_PROFILES) {
   test(`fixed profile contract: ${profile.name}`, async () => {
     assert.ok(profile.input, "A required fixed-profile fixture is missing");
     const result = await generate(profile.input!, { claude: fakeSession(), profiles: new ProfileExpander(resolver), refusals: new RefusalExpander() });
-    assert.equal(result.ideas.length, 6);
-    assert.deepEqual(result.ideas.map(g => g.kind), [...KINDS]);
-    assert.ok(result.ideas.every(g => g.title.endsWith("1")), "higher-scored alternative must win each kind");
+    assert.equal(result.ideas.length, 12, "every passing idea is retained, including same-kind alternatives");
+    assert.deepEqual([...new Set(result.ideas.map(g => g.kind))], [...KINDS]);
     assert.equal(result.diagnostics?.claudeCalls, 4);
     assert.ok(result.ideas.every(g => g.sourceLoves.every(l => profile.input!.loves.includes(l))));
   });
@@ -102,20 +101,22 @@ test("expanded hard-no hits are removed; retries get precise failures and fill t
     return response;
   });
   const result = await generate(TEST_PROFILES[0].input!, { claude: session, profiles: new ProfileExpander(resolver), refusals: new RefusalExpander() });
-  assert.equal(result.ideas.length, 6);
+  assert.equal(result.ideas.length, 12);
   assert.equal(result.diagnostics?.generationCalls, 2);
   assert.ok(result.filteredCount >= 2);
   assert.ok(result.ideas.every(g => !g.colours.includes("carnation")));
 });
-test("critic rejects stuffed/duplicate ideas; three failed rounds never produce a partial six", async () => {
+test("critic rejects unsuitable ideas without exceeding two generation/critic rounds", async () => {
   const session = fakeSession((stage, data, response) => {
     if (stage === "generation") response.ideas.forEach((g: any) => g.title += ` round ${session.calls.generation}`);
-    if (stage === "critic") response.scores.forEach((s: any) => { s.combination = 0; s.novelty = 0; s.issues = ["keyword stuffing; duplicate concept"]; });
+    if (stage === "critic") response.verdicts.forEach((s: any) => { s.pass = false; s.reason = "keyword stuffing; duplicate concept"; });
     return response;
   });
   const result = await generate(TEST_PROFILES[0].input!, { claude: session, profiles: new ProfileExpander(resolver), refusals: new RefusalExpander() });
   assert.equal(result.ideas.length, 0);
-  assert.equal(result.diagnostics?.claudeCalls, 8);
+  assert.equal(result.diagnostics?.claudeCalls, 6);
+  assert.equal(session.calls.generation, 2);
+  assert.equal(session.calls.critic, 2);
 });
 test("owned items, rejection reasons, accumulated seeds and history reach generator AND critic; raw chips do not", async () => {
   const input = { ...TEST_PROFILES[0].input!, owned: "unique old item", rejected: [{ title: "old suggestion", reason: "Too obvious" }], moreLike: "ceramic puzzle", moreLikeSeeds: ["ceramic puzzle", "tea set"], previousTitles: ["past gift"] };
@@ -138,20 +139,92 @@ test("owned items, rejection reasons, accumulated seeds and history reach genera
   });
   assert.deepEqual(seen, ["generation", "critic"]);
 });
-test("failed helpers are not cached or replaced by canned data", async () => {
+test("expansion failure retries once then uses real plain chips without caching failure", async () => {
   const cache = new TasteCache<number>();
   await assert.rejects(cache.get("x", async () => { throw new Error("failure"); }));
   assert.equal((await cache.get("x", async () => 7)).value, 7);
-  const session = fakeSession(() => { throw new Error("helper unavailable"); });
-  await assert.rejects(generate(TEST_PROFILES[0].input!, { claude: session, profiles: new ProfileExpander(resolver), refusals: new RefusalExpander() }));
-  assert.equal(session.calls.generation, 0);
+  const session = fakeSession((stage, _data, response) => {
+    if (stage === "expansion") throw new Error("helper unavailable");
+    return response;
+  });
+  const result = await generate(TEST_PROFILES[0].input!, { claude: session, profiles: new ProfileExpander(resolver), refusals: new RefusalExpander() });
+  assert.equal(result.ideas.length, 12);
+  assert.equal(session.calls.expansion, 2);
+  assert.equal(session.calls.generation, 1);
 });
 test("profile expansion refuses fabricated sources", async () => {
   const session = fakeSession((stage, _data, response) => {
     if (stage === "expansion") response.loves[0].love = "invented source";
     return response;
   });
-  await assert.rejects(new ProfileExpander(resolver).get(TEST_PROFILES[0].input!, session));
+  const result = await new ProfileExpander(resolver).get(TEST_PROFILES[0].input!, session);
+  assert.equal(result.degraded, true);
+  assert.deepEqual(result.value.loves.map(l => l.love), TEST_PROFILES[0].input!.loves);
+  assert.equal(session.calls.expansion, 2);
+});
+test("partial passes survive missing kinds and a capped refill", async () => {
+  const session = fakeSession((stage, _data, response) => {
+    if (stage === "generation") response.ideas = session.calls.generation === 1 ? response.ideas.slice(0, 3) : [];
+    return response;
+  });
+  const result = await generate(TEST_PROFILES[0].input!, { claude: session, profiles: new ProfileExpander(resolver), refusals: new RefusalExpander() });
+  assert.equal(result.ideas.length, 3);
+  assert.equal(new Set(result.ideas.map(g => g.kind)).size, 2);
+  assert.equal(session.calls.generation, 2);
+  assert.equal(session.calls.critic, 1);
+});
+test("critic assigns kind and sources without title-keyword gates", async () => {
+  const session = fakeSession((stage, _data, response) => {
+    if (stage === "generation") response.ideas = [{ ...response.ideas[0], title: "Partner stargazing date at a dark-sky reserve with a star atlas" }];
+    if (stage === "critic") response.verdicts.forEach((v: any) => { v.kind = "experience"; });
+    return response;
+  });
+  const result = await generate(TEST_PROFILES[3].input!, { claude: session, profiles: new ProfileExpander(resolver), refusals: new RefusalExpander() });
+  assert.equal(result.ideas.length, 1);
+  assert.equal(result.ideas[0].kind, "experience");
+});
+test("a refill upstream failure does not erase already reviewed ideas", async () => {
+  const session = fakeSession((stage, _data, response) => {
+    if (stage === "generation") {
+      if (session.calls.generation === 2) throw new Error("upstream unavailable");
+      response.ideas = response.ideas.slice(0, 1);
+    }
+    return response;
+  });
+  const result = await generate(TEST_PROFILES[0].input!, { claude: session, profiles: new ProfileExpander(resolver), refusals: new RefusalExpander() });
+  assert.equal(result.ideas.length, 1);
+  assert.equal(session.calls.generation, 2);
+});
+test("a bad compact expansion is validated and retried exactly once", async () => {
+  const session = fakeSession((stage, _data, response) => {
+    if (stage === "expansion" && session.calls.expansion === 1) response.loves[0].specifics = Array(5).fill("too many");
+    return response;
+  });
+  const result = await new ProfileExpander(resolver).get(TEST_PROFILES[1].input!, session);
+  assert.equal(result.degraded, false);
+  assert.equal(result.value.loves.length, 7);
+  assert.equal(session.calls.expansion, 2);
+});
+test("a failed critic exposes no unreviewed gifts and never exceeds its per-round cap", async () => {
+  const session = fakeSession((stage, _data, response) => {
+    if (stage === "generation") response.ideas.forEach((g: any) => { g.title += ` round ${session.calls.generation}`; });
+    if (stage === "critic") throw new Error("bad critic JSON");
+    return response;
+  });
+  const result = await generate(TEST_PROFILES[0].input!, { claude: session, profiles: new ProfileExpander(resolver), refusals: new RefusalExpander() });
+  assert.equal(result.ideas.length, 0);
+  assert.equal(session.calls.generation, 2);
+  assert.equal(session.calls.critic, 2);
+});
+test("refusal helper failure retains strict original and known-alias exclusions", async () => {
+  const session = fakeSession((stage, _data, response) => {
+    if (stage === "refusals") throw new Error("bad refusal JSON");
+    return response;
+  });
+  const terms = await new RefusalExpander().get(["pink", "Microsoft"], session);
+  assert.equal(passesRules(fixtures(["a", "b"], 20, 40)[0], ["pink"], "", [], terms.terms), true);
+  assert.equal(passesRules({ ...fixtures(["a", "b"], 20, 40)[0], colours: ["blush"] }, ["pink"], "", [], terms.terms), false);
+  assert.equal(passesRules({ ...fixtures(["a", "b"], 20, 40)[0], brand: "Xbox" }, ["Microsoft"], "", [], terms.terms), false);
 });
 test("Wikipedia keeps search rank and distinguishes band names from rivers", async () => {
   const transport: typeof fetch = async () => new Response(JSON.stringify({ query: { pages: [

@@ -35,11 +35,12 @@ export function passesRules(gift: Candidate, refusals: string[], owned: string, 
   if (hardNoHits(gift, refusals, expandedTerms).length) return false;
   const item = normal(gift.title);
   const ownedItems = owned.split(/[,;\n]+/).map(normal).filter(Boolean);
-  if (ownedItems.some(o => item.includes(o) || o.includes(item))) return false;
+  if (ownedItems.some(o => contains(item, o) || contains(o, item))) return false;
   // Broad ownership statements (e.g. "every Joy Division record") block that artist's records.
   if (ownedItems.some(o => {
     const words = o.split(" ").filter(w => !["already", "owns", "has", "all", "every", "the", "a", "an"].includes(w));
-    return words.length > 1 && words.every(w => fields.includes(w.replace(/s$/, "")));
+    return words.length > 1 && words.every(w => contains(fields, w) ||
+      contains(fields, w.endsWith("s") ? w.slice(0, -1) : `${w}s`));
   })) return false;
   if (rejected.some(r => normal(r.title) === item)) return false;
   return true;

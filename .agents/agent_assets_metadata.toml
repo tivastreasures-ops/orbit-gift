@@ -1,0 +1,114 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "0JxaAyrGNBAG8_xrk9knf"
+uri = "file://generated-artifacts/card-art/wolfboy-santa-main-portrait.png"
+type = "image"
+title = "Secret Santa — main portrait"
+description = "1080 × 1350. Wolfboy profile. Forced-main QA review; normal exports respect colour refusals."
+logical_id = "82f47be6-7622-4256-8452-ef79fb584382"
+content_hash = "sha256:e916863e0b678247c38726d2fa3ede2c10d400f74a0c46db811440dcd34be4f5"
+size = 3065427
+mtime_ms = 1793417657949
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:917a5e19-a3de-401f-94aa-814cdabcc7f2/82f47be6-7622-4256-8452-ef79fb584382/d4ffe6fa-4625-459d-a3e2-6fecb6886040"
+storage_version_token = "1793417960024569"
+content_type = "image/png"
+
+[[outputs]]
+id = "Xhyg66Xk5-wmFJXIyIRtX"
+uri = "file://generated-artifacts/card-art/wolfboy-wish-main-portrait.png"
+type = "image"
+title = "All I Want — main portrait"
+description = "1080 × 1350. Wolfboy profile. Forced-main QA review; normal exports respect colour refusals."
+logical_id = "67ec2bc5-6f27-4375-b389-001c97212466"
+content_hash = "sha256:3ed2e2905fc1088c438f2680cab48da3bb56d8c4cb1f5d6f4293ebc7745ef01c"
+size = 2783753
+mtime_ms = 1793417658557
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:917a5e19-a3de-401f-94aa-814cdabcc7f2/67ec2bc5-6f27-4375-b389-001c97212466/d6ac4aec-440d-46f5-aad2-28566ef21262"
+storage_version_token = "1793417960647641"
+content_type = "image/png"
+
+[[outputs]]
+id = "x_Li7ly95gbQhOwh7SEBO"
+uri = "file://generated-artifacts/card-art/wolfboy-stumped-main-portrait.png"
+type = "image"
+title = "I'm Stumped — main portrait"
+description = "1080 × 1350. Wolfboy profile. Forced-main QA review; normal exports respect colour refusals."
+logical_id = "981fcc37-2c8b-4f96-bb7c-b59003230182"
+content_hash = "sha256:c1e5b6ada7a40c57b6d5223075f445669c7f5c79dbf7d34b5027848b63cf5078"
+size = 2135103
+mtime_ms = 1793417659109
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:917a5e19-a3de-401f-94aa-814cdabcc7f2/981fcc37-2c8b-4f96-bb7c-b59003230182/fd714edd-6da7-448a-a4bf-00485feaf43d"
+storage_version_token = "1793417961271220"
+content_type = "image/png"
+
+[[outputs]]
+id = "NSKfUxJnRNXSPaGy_k-Hu"
+uri = "file://generated-artifacts/card-art/wolfboy-tot-main-portrait.png"
+type = "image"
+title = "This or That — main portrait"
+description = "1080 × 1350. Wolfboy profile. Forced-main QA review; normal exports respect colour refusals."
+logical_id = "f65e64d3-ae1b-4d5c-b9bc-04f359c5664b"
+content_hash = "sha256:04d4529e6c4f890cb1ff530fd10ce1cc5df6e459699eb7437ca9e9cba8f6d108"
+size = 2427035
+mtime_ms = 1793417659757
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:917a5e19-a3de-401f-94aa-814cdabcc7f2/f65e64d3-ae1b-4d5c-b9bc-04f359c5664b/fe8e9173-7953-47f9-bafc-033ff61acb39"
+storage_version_token = "1793417961881267"
+content_type = "image/png"
+
+[[outputs]]
+id = "zIuJj803oaO3aesl1gZZO"
+uri = "file://generated-artifacts/card-art/wolfboy-santa-neutral-portrait.png"
+type = "image"
+title = "Secret Santa — neutral portrait"
+description = "1080 × 1350. Wolfboy profile. Approved neutral version."
+logical_id = "a494fc1c-c103-4520-8bb1-6b9cf6a236d1"
+content_hash = "sha256:841e93eda9d0ceb43e6c739ea4c45b3178d79152b0eff5b3be8507d880eeb542"
+size = 2873735
+mtime_ms = 1793417658249
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:917a5e19-a3de-401f-94aa-814cdabcc7f2/a494fc1c-c103-4520-8bb1-6b9cf6a236d1/d5469558-3a28-46d6-8614-432ec370aac9"
+storage_version_token = "1793417962492017"
+content_type = "image/png"
+
+[[outputs]]
+id = "ONZR9aI7mBtZZQqaZByEk"
+uri = "file://generated-artifacts/card-art/wolfboy-wish-neutral-portrait.png"
+type = "image"
+title = "All I Want — neutral portrait"
+description = "1080 × 1350. Wolfboy profile. Approved neutral version."
+logical_id = "badb60ff-b275-435e-b24e-51c19fb562b0"
+content_hash = "sha256:cf8f87f8be6cdff7cdbf73b6a83c6ab7fea6c999731bc2a206278abe8d004524"
+size = 2399030
+mtime_ms = 1793417658825
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:917a5e19-a3de-401f-94aa-814cdabcc7f2/badb60ff-b275-435e-b24e-51c19fb562b0/86c8bd5a-3553-47a9-8001-5b7016a53f01"
+storage_version_token = "1793417963109978"
+content_type = "image/png"
+
+[[outputs]]
+id = "iltr-bYiqcaQFcfaXmjp9"
+uri = "file://generated-artifacts/card-art/wolfboy-stumped-neutral-portrait.png"
+type = "image"
+title = "I'm Stumped — neutral portrait"
+description = "1080 × 1350. Wolfboy profile. Approved neutral version."
+logical_id = "2110c550-e093-48bb-8764-a56507eacdf1"
+content_hash = "sha256:002e03b8ad0013f75d8321e4275b86c3130874601f8cac78dd5cdd299b1ebc7c"
+size = 2161132
+mtime_ms = 1793417659413
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:917a5e19-a3de-401f-94aa-814cdabcc7f2/2110c550-e093-48bb-8764-a56507eacdf1/95ef1141-9127-4e84-ab5d-0b503895e250"
+storage_version_token = "1793417963690196"
+content_type = "image/png"
+
+[[outputs]]
+id = "8iAsrq9dLksDOqrO_FAKF"
+uri = "file://generated-artifacts/card-art/wolfboy-tot-neutral-portrait.png"
+type = "image"
+title = "This or That — neutral portrait"
+description = "1080 × 1350. Wolfboy profile. Approved neutral version."
+logical_id = "426faaff-a6fb-4445-812e-1af8eb0d212d"
+content_hash = "sha256:3a89d68b9779ec275eb0c3cee992d23fc3706c5b705e7fe6450bed40e939e33c"
+size = 2445189
+mtime_ms = 1793417660049
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:917a5e19-a3de-401f-94aa-814cdabcc7f2/426faaff-a6fb-4445-812e-1af8eb0d212d/acc2850a-a796-4ec1-ab29-e356cd7c9765"
+storage_version_token = "1793417964265829"
+content_type = "image/png"

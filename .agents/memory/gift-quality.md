@@ -3,11 +3,23 @@ name: Gift quality and source trust
 description: Why gift generation needs stronger instruction following, repair feedback and exact source identities.
 ---
 
-Preserve the Director's six-kind mix and multi-interest/context gates when tuning generation. Do not fill a missing kind by relaxing a hard no or accepting generic merch.
+Six kinds is a target, not an acceptance gate. Show every safe, critic-approved idea after at most two generation rounds, with one critic per round; preserve partial results instead of returning none for a missing kind.
 
-**Why:** Live small-model attempts repeatedly returned incomplete compliant sets despite explicit examples. The stronger generation model plus concrete contract-violation feedback produced a complete set without weakening the checks. A cheaper lookup model is fine for entity search, but is not automatically a suitable generation replacement.
+**Why:** The Director explicitly replaced the all-or-nothing six-kind rule after real valid gifts were suppressed. The Director praised the Tolstaya/Okkervil, Black Sheep Boy and tea-cosy samples as excellent, but rejected keyword gates that blocked real stargazing and Cosmos ideas.
 
-**How to apply:** When changing model/cost/latency, verify a whole six-kind round against the same constraints. Return none rather than pad with unsafe or generic ideas. Model-reported metadata does not independently establish catalogue existence or semantic quality.
+**How to apply:** The helper critic judges kind, specificity and meaningful two-love/one-love-plus-context combinations. Code keeps hard no's with expanded terms, whole-word/phrase owned checks, budget, duplicates and generic-merch blocking. Never weaken these to fill a kind, and never invent a connection from prose. Report partial/zero results honestly using approved copy.
+
+Expansion must be compact, validate/retry once and fall back to genuine plain chips if it still fails; log the real error. Do not cache failed expansion as successful taste data.
+
+**Why:** The Director says a helper failure must not end a search; the largest seven-love expansion exposed this failure mode.
+
+**How to apply:** Keep all original hard no's and known aliases checked in code if refusal enrichment fails. Unreviewed ideas must not be exposed if the critic fails. Call counts include attempted calls and are logged per search.
+
+Protocol/schema failures are not semantic gift-quality or hard-no failures.
+
+**Why:** Real valid-looking ideas were blocked before any critic call because the generation request left metadata shapes implicit. The working API key and the ideas themselves were not the cause.
+
+**How to apply:** Specify required JSON object/array/enum shapes explicitly. Keep protocol-rejection reporting distinct from actual critic reasons; never invent a critic verdict when no critic ran.
 
 Use only explicit validated source names or exact legacy source matches for constellation links; do not infer a connection from explanatory prose. If any declared source is gone or unknown, use the approved whole-sky fallback rather than a partial invented mapping.
 
@@ -19,4 +31,4 @@ Run the fixed Hinterwelle, Wolfboy, easy and two-love sparse profile checks afte
 
 **Why:** The Director explicitly requires this regression discipline.
 
-**How to apply:** Distinguish deterministic transport tests from real Claude quality runs. Missing credentials or unspecified profile details are blocked, not passes; do not invent the Director's test-profile tastes.
+**How to apply:** Distinguish deterministic transport tests from real Claude quality runs. Run the four profiles once after the coherent fix; if any still fails, stop and report rather than tuning/re-running. Missing credentials/details are blocked, not passes; never invent test tastes.

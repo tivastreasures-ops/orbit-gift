@@ -59,7 +59,7 @@ function GiftCard({ idea, onMore, busy, src, selected, onSelect }: { idea: GiftI
       <dl className="mt-3 space-y-1.5 text-[0.95rem]">
         <dd className="text-gold font-medium" data-testid={`text-price-${idea.id}`}>{COPY.results.price(idea.priceRange)}</dd>
         <dd className="text-muted-foreground" data-testid={`text-where-${idea.id}`}>{COPY.results.where(idea.whereToLook)}</dd>
-        <dd data-testid={`text-because-${idea.id}`}>{COPY.results.because(idea.because)}</dd>
+        <dd data-testid={`text-because-${idea.id}`}>{idea.because ? COPY.results.because(idea.because) : null}</dd>
         <dd className="text-sm text-violet/90 pt-1 border-t border-[hsl(252_30%_34%/0.5)]" data-testid={`text-checked-${idea.id}`}>
           {COPY.results.checked(idea.passedRules.join(', '))}
         </dd>
@@ -252,7 +252,7 @@ export default function ResultsPage() {
               className="w-full max-w-xl"
             />
             <SkyLegend showNo={refusalList.length > 0} />
-            <h1 className="mt-4 text-4xl sm:text-5xl tracking-tight leading-[1.05]" data-testid="text-results-heading">{COPY.results.heading}</h1>
+            <h1 className="mt-4 text-4xl sm:text-5xl tracking-tight leading-[1.05]" data-testid="text-results-heading">{roundIdeas.length === 6 && new Set(roundIdeas.map(g => g.kind)).size === 6 ? COPY.results.heading : COPY.results.partial(roundIdeas.length)}</h1>
             <p className="mt-3 text-lg text-muted-foreground">{COPY.results.subhead}</p>
           </header>
           {phase === 'more' && <LoadingSky more />}

@@ -202,19 +202,43 @@ Taste expansions use bounded six-hour in-memory caches keyed by profile identity
 - All eight share-card art slots and the share-card renderer remain untouched. No new interface copy was invented.
 
 <!-- CLAUDE_PROFILE_EVAL -->
-### Fixed-profile live evaluation — 2026-10-31T03:35:41.022Z
+### Fixed-profile live evaluation — 2026-10-31T07:35:27.677Z
 
+One search per profile, at most two generation rounds and one critic per round.
 Model: `claude-sonnet-5-5`; helper: `claude-sonnet-5-5`.
 
-| Profile | Live result | Claude calls | Accepted kinds |
-| --- | --- | ---: | --- |
-| Hinterwelle | BLOCKED: ANTHROPIC_API_KEY missing | 0 | — |
-| Wolfboy | BLOCKED: ANTHROPIC_API_KEY missing | 0 | — |
-| Mira (easy) | BLOCKED: ANTHROPIC_API_KEY missing | 0 | — |
-| Sol (sparse: two loves) | BLOCKED: ANTHROPIC_API_KEY missing | 0 | — |
+| Profile | Result | Ideas shown | Kinds covered | Claude calls |
+| --- | --- | ---: | --- | ---: |
+| Hinterwelle | ZERO | 0 | — | 4 |
+| Wolfboy | ZERO | 0 | — | 4 |
+| Mira (easy) | ZERO | 0 | — | 4 |
+| Sol (sparse: two loves) | ZERO | 0 | — | 4 |
 
+**Hinterwelle — ideas shown**
+- None.
 
-No simulated output is counted as a live run. Deterministic transport fixtures are a separate contract test, not a semantic-quality evaluation.
+**Hinterwelle — rejected ideas and reasons**
+- No critic verdicts: all 24 candidates were rejected by structured-field validation before the critic could run. See the blocker audit below.
+
+**Wolfboy — ideas shown**
+- None.
+
+**Wolfboy — rejected ideas and reasons**
+- No critic verdicts: all 24 candidates were rejected by structured-field validation before the critic could run. See the blocker audit below.
+
+**Mira (easy) — ideas shown**
+- None.
+
+**Mira (easy) — rejected ideas and reasons**
+- No critic verdicts: all 24 candidates were rejected by structured-field validation before the critic could run. See the blocker audit below.
+
+**Sol (sparse: two loves) — ideas shown**
+- None.
+
+**Sol (sparse: two loves) — rejected ideas and reasons**
+- No critic verdicts: all 24 candidates were rejected by structured-field validation before the critic could run. See the blocker audit below.
+
+PARTIAL means safe reviewed ideas are shown without full six-kind coverage. ZERO/ERROR is reported, never retried by this evaluator. Model JSON and trace files are ignored generated output, not committed. No simulated output is counted as a live run.
 <!-- /CLAUDE_PROFILE_EVAL -->
 
 ## Director-approved final share-card art integration
@@ -247,3 +271,149 @@ No simulated output is counted as a live run. Deterministic transport fixtures a
 - Eight requested portrait review files use Wolfboy's supplied profile: four forced-main review variants and four neutral variants. Forced main is **QA only** so both approved images can be reviewed; ordinary user export still selects neutral for this profile's pink refusal.
 - The 48 PNGs and detailed placement report are generated output in ignored `generated-artifacts/card-art/`, not Git. The reproducible runner is committed as `pnpm test:card-art`.
 - Workspace TypeScript checks and production Vite build passed. The fixed gift-profile suite includes the Director's complete Wolfboy parameters. Live Claude runs remain explicitly blocked by the missing `ANTHROPIC_API_KEY`; no other provider was called.
+
+## Director's bounded-search and semantic-critic revision
+
+This section supersedes the earlier all-six-or-none, keyword-quality and three-round policies. The earlier art/Claude migration notes are historical. The Anthropic key is now present and has successfully authenticated real calls; no key value was read, logged or committed.
+
+### Reviewed stopped-run edits
+
+- Kept the operator trace hook and local model-JSON diagnostics from `gifts.ts`/`gift-eval.ts`; they expose no headers or secrets and do not change objective checks.
+- Kept the request for approximately twelve initial alternatives, replacing the contradictory old “exactly one candidate per kind” instruction.
+- Removed keyword-based kind, specificity, source/context-evidence and colour-as-idea judgments from code. The helper critic returns structured `kind`, `isSpecific`, `sourcesUsed`, `pass`, `reason` and duplicate identity per candidate. It judges meaning, can reclassify the proposed kind, and supplies rejection reasons.
+- Code still enforces all original/expanded hard-no terms against title/category/brand/colours/materials/venue, budget ranges, exact normalized duplicate/prior titles, owned items and the explicit generic-merch blocklist. No critic verdict can override these exclusions.
+- Owned entries now match normalized whole words/phrases, including broad ownership word checks. `art` no longer matches `heart`, while an actual case-insensitive `STAR ATLAS` phrase is still blocked.
+
+### Helper resilience, partial results and costs
+
+- Taste expansion is compact: at most four strings per field per love, with explicit short-string guidance and 16,000 maximum output tokens. JSON and original source identities are validated. A bad reply gets exactly one retry with validation feedback.
+- If both expansion attempts fail, real errors are logged and genuine plain chips are used, with no invented specifics and no successful cache entry. Wikipedia lookup failures also degrade safely. Refusal-helper failure preserves all literal refusals and deterministic known aliases; hard-no checking remains in code.
+- Each search has at most **two generation rounds**, and at most **one critic call per round**. There are no hidden evaluator retries. Every unique passing idea is retained, including multiple good ideas of the same kind; six kinds is the target, not a result gate or a reason to truncate accepted alternatives.
+- Partial results use exactly `Only [N] made it past the no list.` Zero uses exactly `The no list won this round. Loosen one rule or add another love, then try again.` A failed refill preserves earlier reviewed passes. A failed critic never exposes unreviewed ideas.
+- Normal cold first-round success uses four Claude calls; a cached round uses two. One refill normally raises this to six/four respectively. The single permitted taste-expansion retry can add one call. All attempted calls and stage counts are logged per search without profile data or credentials.
+
+### Verification
+
+- All **31 deterministic regression checks** passed, including partial retention, the two-round cap, critic-assigned kinds, compact expansion retry/fallback, strict refusal aliases, whole-word owned matching and preserving passes after a refill error.
+- Workspace TypeScript and production Vite build passed.
+- Isolated phone-browser checks passed for the three-card partial state and the exact zero-state copy. These intercept generation and use **zero Claude calls**; they are not counted as live profile evidence.
+- The four-profile live evaluator is run **once** after this coherent fix. Its current results, number shown, kinds, calls and rejection reasons are recorded in the marked live-evaluation section above. No profile is tuned/re-run afterward, even if it fails.
+- All eight approved share-card assets, slots and rendering paths are unchanged by this revision.
+
+### Single live-pass outcome — remaining blocker, stopped as directed
+
+**Live verification did not pass.** All four profiles returned zero. Each search made exactly four Claude calls: one taste expansion, one refusal expansion and two generation calls; **zero critic calls**. Total: 16 calls. No profile was re-run after this result, and no further runtime fix/tuning was made.
+
+The remaining blocker is a **generation-prompt/schema mismatch introduced in this revision**, not authentication or a semantic critic rejection. The generation prompt lists the `sourceDetails` field without defining its object-array shape. For each profile, the initial 12 candidates returned text; the refill's 12 returned arrays of strings. The parser requires objects with `love` and `detail`. Thus all **96 candidates** were rejected before objective gift checks/critic review. Additional mismatches included an empty `contextType`, occasional overlong source-detail arrays and one three-source candidate.
+
+These are protocol rejections, **not evidence that the ideas failed the no list or lacked quality**. There are no genuine critic reasons to report; none were invented. The earlier successful Hinterwelle run remains evidence that the key works and its praised ideas were good. The current revision must not be described as live-verified or ready to publish.
+
+Sol's refusal helper also exceeded its 40-term response limit. It logged that actual validation error, retained the original alcohol refusal/known aliases in code, and continued. Taste expansion itself completed once for every profile; none required its retry/fallback in this live pass.
+
+#### Candidates rejected before critic review
+
+All titles below share the source-detail format rejection described above. No claim is made that their product facts, budgets or hard-no suitability were reviewed successfully.
+
+**Hinterwelle (24):**
+- Matte black cast-iron teapot with infuser for loose-leaf Earl Grey
+- Factory Records: The Complete Graphic Album (design book)
+- Biergarten or beer hall dinner for two with pretzels and schnitzel
+- Tickets to a local psych or indie-folk gig, with a drone-rock listening night
+- German pantry box: pretzels, sweet and spicy mustards, spätzle and Lebkuchen
+- Earl Grey tasting flight: classic bergamot, Keemun, Lady Grey and Lapsang blend, with Lebkuchen
+- Hand-poured bergamot and black tea soy candle in a matte black vessel
+- Hand-turned walnut Brotzeit board for pretzels, sausages and cheese
+- Okkervil River – Black Sheep Boy on vinyl
+- Official Sanrio Badtz-Maru blind-box mini figure or plush
+- Liquid oil-wheel light show projector for psychedelic haze
+- Spätzle press with a Swabian home-cooking cookbook
+- Electro-Harmonix Nano Big Muff Pi fuzz pedal
+- Badtz-Maru notebook and pen set for scribbling lyrics
+- Night out at a local psych or indie-folk gig
+- Hands-on German cooking class: spätzle, schnitzel and pretzels
+- East Frisian tea ritual set: loose black tea and Kluntje rock sugar
+- Earl Grey flight: Keemun Earl Grey, Lady Grey and smoky lapsang Earl Grey
+- Hand-thrown matte black teacup and saucer for Earl Grey
+- Hand-stamped leather bookmark with 'Black Sheep Boy' and a favourite lyric
+- Okkervil River 'Black Sheep Boy' vinyl LP
+- Vintage 1990s Badtz-Maru Sanrio collectible
+- Oil-wheel style psychedelic light projector
+- 'Touching from a Distance' by Deborah Curtis
+
+**Wolfboy (24):**
+- Frankenstein's Laboratory Plasma Globe Lamp
+- Marvel Champions: The Card Game Core Set
+- Classic Monster Double-Feature Night Out
+- Birthday Comic Shop Crawl with a Back-Issue Budget
+- Full-Moon Midnight Monster-Movie Snack Crate
+- Mad-Scientist Small-Batch Hot Sauce Trio
+- Hand-Stamped Silver and Turquoise Wolf-Moon Pendant
+- Custom Ink-and-Watercolor Portrait of You Two as Classic Monsters
+- Retro-Style Wolf Man Collectible Figure
+- Mid-Grade 1970s Avengers Back-Issue Comic
+- Horrified Universal Monsters Board Game Bundle
+- Full-Moon Stargazing Night Kit
+- Wolf Man-style silver wolf-head walking cane
+- Mad-scientist plasma globe lightning lamp with a turquoise glow
+- Classic monster double-feature night at a repertory cinema, with dinner out
+- Marvel vs DC comic shop crawl with a back-issue budget for each of you
+- Gothic-horror loose-leaf tea sampler with moonlit and misty-moor blends
+- Hero vs villain hot sauce flight, sorted by heat level, with a comic-book gift tin
+- Handmade sterling silver and turquoise wolf-head pendant
+- Handmade leather journal with stitched-scar spine and turquoise thread
+- Retro 8-inch articulated Wolf Man figure in vintage monster-toy style
+- Bronze Age Avengers back issue, bagged and boarded
+- Marvel Champions: The Card Game co-op core set for game nights together
+- Full-moon werewolf watch-night kit: binoculars, fog machine and The Wolf Man on blu-ray
+
+**Mira (24):**
+- All-weather field notebook set for her life list
+- Microplane zester and fluted tart tin set
+- Guided bird walk at a botanical garden
+- Pottery wheel-throwing class for two
+- Lemon verbena and citrus herbal tea sampler
+- Bird Friendly shade-grown coffee sampler
+- Hand-thrown stoneware bird feeder or bird bath
+- Handmade stoneware lemon tart or pie dish
+- Vintage ceramic bird plate or figurine
+- Vintage Peterson Field Guide to the Birds, older edition
+- Potted Meyer lemon tree in a glazed ceramic planter
+- Native bird-friendly plant seed collection with plant labels
+- Waterproof field notebook set for recording sightings
+- Speckled stoneware citrus juicer with a pouring spout
+- Garden membership or day pass with a guided early-morning bird walk
+- Wheel-throwing studio session for two
+- Meyer lemon gift box with lemon curd for baking
+- Lemon verbena and lemon balm herbal tea set
+- Handmade stoneware hanging bird feeder from an independent potter
+- Hand-thrown fluted tart dish in a lemon-yellow glaze
+- Vintage mid-century studio pottery bud vase
+- Vintage edition of Peterson's A Field Guide to the Birds
+- Cyanotype sun-print kit for pressing garden leaves and ferns
+- Cedar nest box building kit for the backyard
+
+**Sol (24):**
+- Lodge Cast Iron Combo Cooker for Birthday Country Loaves
+- Celestron Cometron 7x50 Binoculars for Shared Stargazing
+- Planetarium Show Night Followed by a Home-Baked Loaf Supper
+- Couples Sourdough Workshop at a Local Artisan Bakery
+- Heritage Grain Flour Trio: Rye, Spelt and High-Extraction Wheat
+- Stargazing Night Cocoa and Shortbread Star Kit
+- Hand-Embroidered Linen Bread Bag with Constellation Stitching
+- Custom Handmade Bread Lame with Engraved Wooden Handle
+- Used Hardcover of Carl Sagan's Cosmos
+- Vintage Wagner Ware Cast Iron Skillet for Focaccia
+- Joby GorillaPod for Dough-Rise Time-Lapses and Night Sky Photos
+- Smartphone Adapter for Binoculars or Telescope Astrophotography
+- Lodge Cast Iron Combo Cooker for open-crumb country loaves
+- Celestron Cometron 7x50 binoculars with a red flashlight
+- Couples sourdough workshop at a local bakery
+- Star party or dark-sky night with a local astronomy club
+- Stone-milled heirloom flour sampler for country loaves and rye
+- Stargazing picnic kit: star-shaped discard crackers, jam, cocoa and a red torch
+- Hand-engraved constellation bread lame
+- Embroidered linen bread bag with a night-sky motif
+- Small authenticated Campo del Cielo meteorite fragment
+- Used older edition of Norton's Star Atlas
+- Moon-phase sourdough baking journal
+- Smartphone adapter for binoculars or telescopes for Moon photography

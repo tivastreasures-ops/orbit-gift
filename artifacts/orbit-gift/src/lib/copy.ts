@@ -68,6 +68,7 @@ export const COPY = {
   loading: { l1: 'Mapping their constellation...', l2: 'Checking every idea against the no list.' },
   results: {
     heading: 'Six ideas. All of them passed the no list.',
+    partial: (n: number) => `Only ${n} made it past the no list.`,
     subhead: 'Keep the good ones. Toss the rest into space.',
     price: (p: string) => `Around ${p}`,
     where: (w: string) => `Look for it at ${w}`,
