@@ -1,3 +1,4 @@
 - [Director approval rules](director-approval.md) — direct Claude only, exact copy, approved eight-image art/slots set, no accounts/database in MVP.
 - [Gift quality constraints](gift-quality.md) — critic judges meaning; strict objective exclusions, partial results, two-round cap and one live run per fixed profile.
 - [Anthropic tool compatibility](anthropic-tool-compatibility.md) — Sonnet 5.5 requires auto, not forced tool choice; distinguish request rejection from reply format failures.
+- [Tool capture limits](tool-runtime.md) — capture failures can follow successful remote mutations; verify before retrying and release large notebook payloads.
