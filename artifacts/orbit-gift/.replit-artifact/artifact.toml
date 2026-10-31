@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Orbit & Wonder"
+description = "Stardust Theory. Gifts for the people who are impossible to shop for."
+version = "1.0.0"
+id = "artifacts/orbit-gift"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22717
+
+[services.development]
+run = "pnpm --filter @workspace/orbit-gift run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/orbit-gift", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/orbit-gift/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22717"
+BASE_PATH = "/"

@@ -1,0 +1,1 @@
+- [Director approval rules](director-approval.md) — exact copy deck, unapproved card art stays blank, no accounts/database in MVP.
