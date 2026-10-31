@@ -56,9 +56,15 @@ export default function RecipientNew() {
           <legend className="label">{COPY.who.budgetLabel}</legend>
           <p className="text-sm text-muted-foreground -mt-1 mb-3">{COPY.who.budgetHelper}</p>
           <div className="flex items-center gap-3">
-            <input type="number" inputMode="decimal" min={0} max={100000} className="field tabular-nums" value={min} onChange={(e) => setMin(e.target.value)} aria-label={NEED('minimum budget field label')} data-testid="input-budget-min" />
+            <label className="min-w-0 flex-1">
+              <span className="block text-sm mb-1.5">{NEED('minimum budget field label')}</span>
+              <input type="number" inputMode="decimal" min={0} max={100000} className="field tabular-nums" value={min} onChange={(e) => setMin(e.target.value)} aria-label={NEED('minimum budget field label')} data-testid="input-budget-min" />
+            </label>
             <span aria-hidden="true" className="text-gold">–</span>
-            <input type="number" inputMode="decimal" min={0} max={100000} className="field tabular-nums" value={max} onChange={(e) => setMax(e.target.value)} aria-label={NEED('maximum budget field label')} data-testid="input-budget-max" />
+            <label className="min-w-0 flex-1">
+              <span className="block text-sm mb-1.5">{NEED('maximum budget field label')}</span>
+              <input type="number" inputMode="decimal" min={0} max={100000} className="field tabular-nums" value={max} onChange={(e) => setMax(e.target.value)} aria-label={NEED('maximum budget field label')} data-testid="input-budget-max" />
+            </label>
           </div>
         </fieldset>
         <div className="enter pt-2" style={{ ['--i' as string]: 5 }}>

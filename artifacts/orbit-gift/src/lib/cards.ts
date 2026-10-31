@@ -287,7 +287,7 @@ function section(ctx: CanvasRenderingContext2D, sec: Section, x: number, y: numb
   let cy = y + ip;
   const iw = w - ip * 2;
   if (sec.label) {
-    cy = txt(ctx, sec.label, `700 ${25 * s}px Outfit`, sec.tone === 'b' ? pal.accent2 : pal.accent, 34 * s, x + ip, cy, iw, draw);
+    cy = txt(ctx, sec.label, `500 ${25 * s}px "DM Sans"`, sec.tone === 'b' ? pal.accent2 : pal.accent, 34 * s, x + ip, cy, iw, draw);
     cy += 8 * s;
   }
   for (const e of sec.entries) {
@@ -298,16 +298,16 @@ function section(ctx: CanvasRenderingContext2D, sec: Section, x: number, y: numb
         ctx.arc(x + ip + 6 * s, cy + 22 * s, 5 * s, 0, Math.PI * 2);
         ctx.fill();
       }
-      cy = txt(ctx, e.text, `500 ${31 * s}px Outfit`, pal.ink, 42 * s, x + ip + 22 * s, cy, iw - 22 * s, draw);
+      cy = txt(ctx, e.text, `500 ${31 * s}px "DM Sans"`, pal.ink, 42 * s, x + ip + 22 * s, cy, iw - 22 * s, draw);
     } else {
       cy += 50 * s;
       if (draw) rule(ctx, x + ip, x + w - ip, cy - 8 * s, pal.muted);
     }
     if (e.subLabel !== undefined) {
       if (e.sub) {
-        cy = txt(ctx, `${e.subLabel} ${e.sub}`, `italic 400 ${25 * s}px Fraunces`, pal.muted, 34 * s, x + ip + 22 * s, cy, iw - 22 * s, draw);
+        cy = txt(ctx, `${e.subLabel} ${e.sub}`, `400 ${25 * s}px "DM Sans"`, pal.muted, 34 * s, x + ip + 22 * s, cy, iw - 22 * s, draw);
       } else {
-        cy = txt(ctx, e.subLabel, `italic 400 ${25 * s}px Fraunces`, pal.muted, 34 * s, x + ip + 22 * s, cy, iw - 22 * s, draw);
+        cy = txt(ctx, e.subLabel, `400 ${25 * s}px "DM Sans"`, pal.muted, 34 * s, x + ip + 22 * s, cy, iw - 22 * s, draw);
         cy += 34 * s;
         if (draw) rule(ctx, x + ip + 22 * s, x + w - ip, cy - 8 * s, pal.muted);
       }
@@ -332,10 +332,10 @@ function paint(ctx: CanvasRenderingContext2D, W: number, o: RenderOpts, pal: Pal
   const cw = W - padX * 2;
   const h = header(o);
   let y = 64 * s + 8;
-  y = txt(ctx, h.title, `700 ${70 * s}px Fraunces`, pal.ink, 80 * s, padX, y, cw, draw, 'center');
-  if (h.subtitle) y = txt(ctx, h.subtitle, `italic 400 ${34 * s}px Fraunces`, pal.accent, 44 * s, padX, y + 4 * s, cw, draw, 'center');
-  if (h.opening) y = txt(ctx, h.opening, `400 ${29 * s}px Outfit`, pal.ink, 40 * s, padX + 20, y + 14 * s, cw - 40, draw, 'center');
-  if (o.name.trim()) y = txt(ctx, o.name.trim(), `600 ${30 * s}px Outfit`, pal.accent2, 40 * s, padX, y + 10 * s, cw, draw, 'center');
+  y = txt(ctx, h.title, `300 ${70 * s}px "Josefin Sans"`, pal.ink, 80 * s, padX, y, cw, draw, 'center');
+  if (h.subtitle) y = txt(ctx, h.subtitle, `300 ${34 * s}px "Josefin Sans"`, pal.accent, 44 * s, padX, y + 4 * s, cw, draw, 'center');
+  if (h.opening) y = txt(ctx, h.opening, `400 ${29 * s}px "DM Sans"`, pal.ink, 40 * s, padX + 20, y + 14 * s, cw - 40, draw, 'center');
+  if (o.name.trim()) y = txt(ctx, o.name.trim(), `500 ${30 * s}px "DM Sans"`, pal.accent2, 40 * s, padX, y + 10 * s, cw, draw, 'center');
   y += 26 * s;
   const cols = o.template === 'tot' || o.size === 'square' ? 2 : 1;
   const gap = 22 * s;
@@ -392,11 +392,11 @@ let fontsReady: Promise<unknown> | null = null;
 function ensureFonts() {
   if (!fontsReady) {
     fontsReady = Promise.all([
-      document.fonts.load('700 40px Fraunces'),
-      document.fonts.load('italic 400 40px Fraunces'),
-      document.fonts.load('500 40px Outfit'),
-      document.fonts.load('700 40px Outfit'),
-      document.fonts.load('400 40px Outfit'),
+      document.fonts.load('300 40px "Josefin Sans"'),
+      document.fonts.load('400 40px "Josefin Sans"'),
+      document.fonts.load('600 40px "Josefin Sans"'),
+      document.fonts.load('500 40px "DM Sans"'),
+      document.fonts.load('400 40px "DM Sans"'),
     ]).catch(() => undefined);
   }
   return fontsReady;
@@ -440,16 +440,16 @@ export async function renderCard(o: RenderOpts): Promise<{ canvas: HTMLCanvasEle
   let by = H - FOOT;
   if (linkLine) {
     by -= 62;
-    txt(ctx, linkLine, `700 ${28}px Outfit`, pal.accent, 40, 60, by + 8, W - 120, true, 'center');
+    txt(ctx, linkLine, `500 ${28}px "DM Sans"`, pal.accent, 40, 60, by + 8, W - 120, true, 'center');
   }
   if (blankLabel) {
     by -= 46;
-    txt(ctx, blankLabel, `500 ${22}px Outfit`, pal.muted, 32, 60, by + 6, W - 120, true, 'center');
+    txt(ctx, blankLabel, `500 ${22}px "DM Sans"`, pal.muted, 32, 60, by + 6, W - 120, true, 'center');
   }
 
   ctx.fillStyle = pal.footer;
   ctx.fillRect(0, H - FOOT, W, FOOT);
-  txt(ctx, COPY.footer(o.appName, o.appUrl), `500 ${20}px Outfit`, pal.footerInk, 25, 56, H - FOOT + 16, W - 240, true);
+  txt(ctx, COPY.footer(o.appName, o.appUrl), `500 ${20}px "DM Sans"`, pal.footerInk, 25, 56, H - FOOT + 16, W - 240, true);
   drawMark(ctx, W - 56 - 76, H - FOOT + 30, pal.mark);
 
   return { canvas, neutral };

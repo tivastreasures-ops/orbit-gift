@@ -7,7 +7,7 @@ Use the supplied COPY DECK verbatim. Do not invent user-facing copy; mark missin
 
 **Why:** The user explicitly requires control over all user-facing wording.
 
-**How to apply:** Check the attached Orbit & Wonder build spec before UI or export copy changes.
+**How to apply:** Check the attached Orbit & Wonder build spec and the Director-approved supplemental copy in BUILD.md before UI or export copy changes. The Director supplied replacements for all original copy gaps; do not reintroduce placeholders for those approved purposes.
 
 Keep share-card art as temporary blank slots until the Director uploads eight backgrounds (four main, four neutral) and gives explicit go-ahead. Do not generate substitute art or treat placeholders as approved.
 

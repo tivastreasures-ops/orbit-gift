@@ -23,33 +23,50 @@ Excluded as specified: accounts, database persistence/sync, product purchase lin
 
 No original interface prose is approved. Supplied COPY DECK strings are verbatim; template labels/titles also come from supplied spec wording. Dynamic user entries, canonical entity names, gift attributes, budgets, and URLs are data, not newly authored static interface copy. Missing wording must appear as `[COPY NEEDED: purpose]`.
 
-### Missing copy inventory
+### Director-approved supplemental copy
 
-The following 21 purposes remain explicitly marked `[COPY NEEDED: …]`. Some appear only as accessible labels or on the blank export:
+All 21 previous gaps are resolved by the Director's exact strings. The Director also supplied the saved-profile option format. No currently used interface or export string remains unresolved. Future unsupplied wording still renders `[COPY NEEDED: purpose]`.
 
-1. `settings button label`
-2. `settings panel title`
-3. `close settings button label`
-4. `app name setting label`
-5. `tagline setting label`
-6. `back button label`
-7. `recipient not found message`
-8. `remove chip button label`
-9. `minimum budget field label`
-10. `maximum budget field label`
-11. `link to edit this person's loves/no's and find more gifts`
-12. `toggle for typing returned I'm Stumped answers into this profile`
-13. `button: add returned answers to profile`
-14. `back to edit loves and no's link`
-15. `retry button label`
-16. `label: fill from a saved profile or start blank`
-17. `option: start blank`
-18. `button: send fillable completion link`
-19. `toast: fillable link copied`
-20. `label on blank PNG saying it is for print/manual completion`
-21. `404 page message`
+| Purpose | Approved wording |
+| --- | --- |
+| Settings button | Settings |
+| Settings panel title | Fine-tune the sky |
+| Settings close | Done |
+| App-name label | App name |
+| Tagline label | Tagline |
+| Back button | Back |
+| Recipient not found | Can't find that person. This browser may have forgotten them. |
+| Remove chip, screen readers | Remove [ITEM] |
+| Minimum budget label | From $ |
+| Maximum budget label | Up to $ |
+| Keepers edit link | Edit their loves and no's |
+| Returned-answers toggle | They sent answers back |
+| Add returned answers button | Add their answers |
+| Results back link | Change their loves and no's |
+| Results retry | Try again |
+| Sharing start label | Start from |
+| Saved-profile option | [NAME]'s profile |
+| Start-blank option | A blank card |
+| Send fillable link button | Send the fill-in link |
+| Link copied toast | Link copied. Go send it. |
+| Blank PNG label | Print it, write on it, send a photo back. |
+| 404 page | This corner of the sky is empty. Head home. |
 
-Template titles and field labels use the exact text supplied in the template/art sections of the spec. No unsupplied wording was invented for these gaps.
+`[ITEM]` and `[NAME]` are replaced only with the actual chip text and saved profile name. The budget labels are visible as well as accessible. PNG labels use the same approved copy as the interface. Template titles and field labels retain the original COPY DECK.
+
+### Director typography and constellation revision — 2026-10-30
+
+- Removed Fraunces and Outfit from all interface styles and PNG canvas text/font loading.
+- Google Fonts: Josefin Sans 300 for large headings, 400 for the wordmark, 600 with wide letter spacing for small caps. DM Sans 400/500 for body, buttons, chips, and gift cards, including saved gift titles. Phone headline/body sizing stays readable.
+- The decorative logo is an SVG wrapped gift box with a bow, nine glowing stars (two bright gold, seven soft white), and thin gold connecting lines.
+- The home hero retains the purple planet as the person. Eight varied gold/white stars span the orbit, linked with 1px, 50%-opacity gold lines. Lines draw once via stroke-dashoffset; stars then twinkle. Unique SVG filter/gradient IDs prevent clashes.
+- Screen 2 uses one orbit star per actual love chip, adding a new star immediately. Golden-angle placement spreads the stars around the whole orbit without moving existing stars on append; removal can redistribute the remaining constellation.
+- Results use the same planet/love constellation with six sequentially igniting gift stars. Every current server-generated gift links to the exact source-love chip via `because` (the server preserves that input string). Legacy explanatory `because` values use conservative whole-word matching. If a source love was deleted, no false link is invented.
+- Gift paths and stars are decorative (`aria-hidden`), never navigation. Gift cards and headings remain fully readable without animation. Both OS reduced motion and the in-app switch show static, fully drawn SVGs.
+- No Three.js, generated artwork, or final card backgrounds were added. The eight blank card-art slots are unchanged.
+- Verification: targeted web TypeScript check passed; production Vite build passed with `PORT=22717 BASE_PATH=/`. Phone screenshots are captured after fonts and the one-time draw animation settle. Generated screenshots are ignored by Git and deployment.
+- Focused real-browser review at 402×874: home and results have no horizontal overflow; live generation returned six readable gift cards with six gift stars and six connecting lines. Computed heading/wordmark/small-caps/gift-title fonts matched the requested families and weights. OS reduced-motion emulation left all six gift stars visible and their lines fully drawn. Settings opened and closed with Done; no missing-copy marker appeared.
+- Approved-copy audit resolved all 24 literal supplemental-copy call sites and checked both dynamic `[ITEM]`/`[NAME]` substitutions. Real Android sharing and the full cross-device acceptance checklist remain separate, unverified release checks.
 
 ## Artwork status
 
@@ -70,7 +87,6 @@ Final art must have blank live-text/footer areas and original constellation sign
 ## Open items
 
 - Director uploads/approves eight backgrounds; final overlay/signature and both-size artwork checks follow.
-- Director supplies missing UI strings listed below.
 - Create empty `QLOO_API_KEY` in Replit Secrets; fill later when desired.
 - Real Android Chrome share-sheet testing, separate-device completion, and the full three-round Hinterwelle acceptance exercise remain release checks; no physical-device result is claimed.
 - Qloo live adapter needs credentialed smoke testing after a key is supplied.

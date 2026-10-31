@@ -220,7 +220,7 @@ export default function SharePage() {
                 <select className="field" value={source} onChange={(e) => prefill(e.target.value)} data-testid="select-source">
                   <option value="">{NEED('option: start blank')}</option>
                   {recipients.map((r) => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
+                    <option key={r.id} value={r.id}>{COPY.share.profile(r.name)}</option>
                   ))}
                 </select>
               </label>

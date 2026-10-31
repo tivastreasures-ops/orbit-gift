@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { useSearchTaste } from '@workspace/api-client-react';
-import { COPY, NEED } from '@/lib/copy';
+import { COPY } from '@/lib/copy';
 import { actions, useData, type TasteChip } from '@/lib/store';
 
 export function ChipEditor({ recipientId, type, placeholder }: { recipientId: string; type: 'love' | 'refuse'; placeholder: string }) {
@@ -80,7 +80,7 @@ function ChipRow({ chip, index }: { chip: TasteChip; index: number }) {
           type="button"
           onClick={() => actions.removeChip(chip.id)}
           className="grid place-items-center w-9 h-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-[hsl(250_40%_24%)] shrink-0"
-          aria-label={NEED('remove chip button label')}
+          aria-label={COPY.removeChip(chip.text)}
           data-testid={`button-remove-chip-${chip.id}`}
         >
           <X className="w-4 h-4" />

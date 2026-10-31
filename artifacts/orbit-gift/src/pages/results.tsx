@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams, useSearch } from 'wouter';
 import { Heart, X, Sparkles, RotateCcw } from 'lucide-react';
 import { useGenerateGifts, type GiftIdea } from '@workspace/api-client-react';
+import { OrbitConstellation } from '@/components/starfield';
 import { MissingRecipient } from '@/components/flow-header';
 import { COPY, NEED } from '@/lib/copy';
 import { actions, useData } from '@/lib/store';
@@ -11,20 +12,23 @@ function errorText(e: unknown) {
   return COPY.errors.broke;
 }
 
-const POINTS = [[8, 30], [26, 12], [46, 38], [62, 16], [80, 42], [94, 20]];
-
-function Constellation({ count }: { count: number }) {
-  const pts = POINTS.slice(0, Math.max(1, count));
-  return (
-    <svg viewBox="0 0 100 50" className="w-full max-w-md h-20" aria-hidden="true" preserveAspectRatio="none">
-      {pts.slice(1).map(([x, y], i) => (
-        <line key={i} x1={pts[i][0]} y1={pts[i][1]} x2={x} y2={y} stroke="hsl(42 80% 70% / 0.45)" strokeWidth="0.4" vectorEffect="non-scaling-stroke" className="const-line" style={{ ['--i' as string]: i }} />
-      ))}
-      {pts.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r="1.6" fill="hsl(46 90% 80%)" className="ignite" style={{ ['--i' as string]: i, transformOrigin: `${x}px ${y}px` }} />
-      ))}
-    </svg>
-  );
+/**
+ * The server preserves the exact source love in `because`. Match that first
+ * (including one-character loves); whole-word matching supports older rounds.
+ * Never invent a relationship when the source love has since been deleted.
+ */
+function sourceLove(idea: GiftIdea, loves: { id: string; text: string }[]): string | null {
+  const because = idea.because.toLowerCase();
+  const exact = loves.find((love) => love.text.trim().toLowerCase() === because.trim());
+  if (exact) return exact.id;
+  let best: { id: string; len: number } | null = null;
+  for (const l of loves) {
+    const t = l.text.trim().toLowerCase();
+    if (t.length < 2) continue;
+    const esc = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (new RegExp(`(^|[^\\p{L}\\p{N}])${esc}($|[^\\p{L}\\p{N}])`, 'u').test(because) && (!best || t.length > best.len)) best = { id: l.id, len: t.length };
+  }
+  return best ? best.id : null;
 }
 
 function LoadingSky({ more }: { more: boolean }) {
@@ -62,9 +66,9 @@ function GiftCard({ idea, index, onMore, busy }: { idea: GiftIdea; index: number
   const [asking, setAsking] = useState(false);
   const saved = idea.status === 'saved';
   return (
-    <article className="reveal glass rounded-3xl p-5 sm:p-6 flex flex-col relative" style={{ ['--i' as string]: index }} data-testid={`card-gift-${idea.id}`}>
-      <span className={`ignite absolute -top-1.5 left-7 w-3 h-3 rounded-full ${saved ? 'bg-gold shadow-[0_0_16px_hsl(42_90%_60%)]' : 'bg-[hsl(48_90%_90%)] shadow-[0_0_10px_hsl(48_90%_80%/0.8)]'}`} style={{ ['--i' as string]: index }} aria-hidden="true" />
-      <h3 className="font-display text-xl sm:text-[1.4rem] font-semibold leading-snug" data-testid={`text-gift-title-${idea.id}`}>{idea.title}</h3>
+    <article className="glass rounded-3xl p-5 sm:p-6 flex flex-col relative" data-testid={`card-gift-${idea.id}`}>
+      <span className={`absolute -top-1.5 left-7 w-3 h-3 rounded-full ${saved ? 'bg-gold shadow-[0_0_16px_hsl(42_90%_60%)]' : 'bg-[hsl(48_90%_90%)] shadow-[0_0_10px_hsl(48_90%_80%/0.8)]'}`} aria-hidden="true" />
+      <h3 className="gift-title text-xl sm:text-[1.4rem] leading-snug" data-testid={`text-gift-title-${idea.id}`}>{idea.title}</h3>
       <dl className="mt-3 space-y-1.5 text-[0.95rem]">
         <dd className="text-gold font-medium" data-testid={`text-price-${idea.id}`}>{COPY.results.price(idea.priceRange)}</dd>
         <dd className="text-muted-foreground" data-testid={`text-where-${idea.id}`}>{COPY.results.where(idea.whereToLook)}</dd>
@@ -89,7 +93,7 @@ function GiftCard({ idea, index, onMore, busy }: { idea: GiftIdea; index: number
       </div>
       {asking && (
         <div className="enter mt-4 rounded-2xl bg-[hsl(238_46%_9%/0.6)] p-4" role="group" aria-label={COPY.results.prompt}>
-          <p className="font-display text-lg">{COPY.results.prompt}</p>
+          <p className="text-lg">{COPY.results.prompt}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {COPY.results.reasons.map((r) => (
               <button key={r} type="button" className="pill" onClick={() => actions.setGiftStatus(idea.id, 'rejected', r)} data-testid={`button-reason-${idea.id}-${r.toLowerCase().replace(/\W+/g, '-')}`}>
@@ -196,6 +200,7 @@ export default function ResultsPage() {
   if (!r) return <MissingRecipient />;
 
   const busy = phase !== 'idle';
+  const loveList = chips.filter((c) => c.recipientId === r.id && c.type === 'love').map((c) => ({ id: c.id, text: c.text }));
   const visible = roundIdeas.filter((g) => g.status !== 'rejected');
 
   return (
@@ -204,7 +209,7 @@ export default function ResultsPage() {
         <Link href={`/recipient/${r.id}/refusals`} className="text-sm text-muted-foreground hover:text-gold" data-testid="link-back-refusals">
           <span className="copy-needed">{NEED('back to edit loves and no\'s link')}</span>
         </Link>
-        <span className="ml-auto font-display text-gold">{r.name}</span>
+        <span className="ml-auto wordmark text-gold">{r.name}</span>
       </div>
 
       {phase === 'loading' ? (
@@ -232,9 +237,14 @@ export default function ResultsPage() {
       ) : (
         <>
           <header className="mt-6">
-            <Constellation count={roundIdeas.length} />
-            <h1 className="mt-2 text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.05] reveal" data-testid="text-results-heading">{COPY.results.heading}</h1>
-            <p className="mt-3 text-lg text-muted-foreground reveal" style={{ ['--i' as string]: 1 }}>{COPY.results.subhead}</p>
+            <OrbitConstellation
+              key={roundIds.join('|')}
+              loves={loveList}
+              gifts={roundIdeas.map((g) => ({ id: g.id, loveId: sourceLove(g, loveList), saved: g.status === 'saved' }))}
+              className="w-full max-w-md h-auto"
+            />
+            <h1 className="mt-2 text-4xl sm:text-5xl tracking-tight leading-[1.05]" data-testid="text-results-heading">{COPY.results.heading}</h1>
+            <p className="mt-3 text-lg text-muted-foreground">{COPY.results.subhead}</p>
             {filtered > 0 && (
               <div className="mt-4 flex items-center gap-3 h-6" data-testid="status-asteroids">
                 {Array.from({ length: Math.min(filtered, 8) }, (_, i) => (

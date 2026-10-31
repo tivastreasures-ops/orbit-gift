@@ -20,7 +20,7 @@ function Intro() {
     <section className="mx-auto max-w-5xl px-4 sm:px-6 pt-10 sm:pt-20 pb-10 grid md:grid-cols-[1.25fr_1fr] gap-10 items-center">
       <div>
         <p className="eyebrow enter" style={{ ['--i' as string]: 0 }}>{COPY.home.tagline}</p>
-        <p className="font-display text-2xl text-gold mt-2 enter" style={{ ['--i' as string]: 1 }} data-testid="text-home-name">{COPY.home.name}</p>
+        <p className="wordmark text-2xl text-gold mt-2 enter" style={{ ['--i' as string]: 1 }} data-testid="text-home-name">{COPY.home.name}</p>
         <h1 className="mt-5 text-[2.6rem] leading-[1.02] sm:text-6xl font-semibold tracking-tight enter" style={{ ['--i' as string]: 2 }} data-testid="text-home-headline">
           {COPY.home.headline}
         </h1>
@@ -34,7 +34,7 @@ function Intro() {
         </div>
       </div>
       <div className="relative grid place-items-center enter" style={{ ['--i' as string]: 3 }}>
-        <div className="float"><Planet size={300} className="w-64 h-64 sm:w-80 sm:h-80" /></div>
+        <div className="float"><Planet className="w-[20rem] sm:w-[26rem] h-auto" /></div>
       </div>
     </section>
   );
@@ -58,7 +58,7 @@ function ReturnedAnswers({ r }: { r: Recipient }) {
   return (
     <details className="glass rounded-2xl mt-6 group">
       <summary className="cursor-pointer list-none px-5 py-4 flex items-center gap-3 min-h-[52px]" data-testid="button-toggle-returned">
-        <Mark className="w-7 h-4 text-gold" />
+        <Mark className="w-7 h-5" />
         <span className="copy-needed">{NEED("toggle for typing returned I'm Stumped answers into this profile")}</span>
       </summary>
       <div className="px-5 pb-5 grid sm:grid-cols-2 gap-4">
@@ -164,7 +164,7 @@ export default function Keepers() {
               {saved.map((g, i) => (
                 <li key={g.id} className="glass rounded-3xl p-5 enter relative" style={{ ['--i' as string]: i + 2 }} data-testid={`card-saved-${g.id}`}>
                   <span className="absolute top-5 right-5 w-2 h-2 rounded-full bg-gold shadow-[0_0_12px_hsl(42_80%_60%)]" aria-hidden="true" />
-                  <h3 className="font-display text-xl font-semibold pr-6 leading-snug" data-testid={`text-saved-title-${g.id}`}>{g.title}</h3>
+                  <h3 className="gift-title text-xl pr-6 leading-snug" data-testid={`text-saved-title-${g.id}`}>{g.title}</h3>
                   <p className="mt-2 text-gold text-sm font-medium">{COPY.results.price(g.priceRange)}</p>
                   <p className="text-sm text-muted-foreground">{COPY.results.where(g.whereToLook)}</p>
                   <p className="mt-2 text-sm">{COPY.results.because(g.because)}</p>

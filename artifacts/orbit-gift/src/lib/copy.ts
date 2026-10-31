@@ -1,8 +1,31 @@
 // COPY DECK — verbatim. Do not author new user-facing strings here.
-// Anything missing renders via NEED() and is listed in the build report.
-export const NEED = (purpose: string) => `[COPY NEEDED: ${purpose}]`;
+// Director-approved additions. Unknown future wording still requires approval.
+const DIRECTOR_COPY: Record<string, string> = {
+  'settings button label': 'Settings',
+  'settings panel title': 'Fine-tune the sky',
+  'close settings button label': 'Done',
+  'app name setting label': 'App name',
+  'tagline setting label': 'Tagline',
+  'back button label': 'Back',
+  'recipient not found message': "Can't find that person. This browser may have forgotten them.",
+  'minimum budget field label': 'From $',
+  'maximum budget field label': 'Up to $',
+  "link to edit this person's loves/no's and find more gifts": "Edit their loves and no's",
+  "toggle for typing returned I'm Stumped answers into this profile": 'They sent answers back',
+  'button: add returned answers to profile': 'Add their answers',
+  "back to edit loves and no's link": "Change their loves and no's",
+  'retry button label': 'Try again',
+  'label: fill from a saved profile or start blank': 'Start from',
+  'option: start blank': 'A blank card',
+  'button: send fillable completion link': 'Send the fill-in link',
+  'toast: fillable link copied': 'Link copied. Go send it.',
+  'label on blank PNG saying it is for print/manual completion': 'Print it, write on it, send a photo back.',
+  '404 page message': 'This corner of the sky is empty. Head home.',
+};
+export const NEED = (purpose: string) => DIRECTOR_COPY[purpose] ?? `[COPY NEEDED: ${purpose}]`;
 
 export const COPY = {
+  removeChip: (item: string) => `Remove ${item}`,
   home: {
     name: 'Orbit & Wonder',
     tagline: 'Stardust Theory',
@@ -77,6 +100,7 @@ export const COPY = {
     broke: "That wasn't supposed to happen. Try again.",
   },
   share: {
+    profile: (name: string) => `${name}'s profile`,
     question: 'What are we doing today?',
     options: [
       { id: 'hint', title: 'Drop a hint', desc: "Post it. Someone's paying attention." },
