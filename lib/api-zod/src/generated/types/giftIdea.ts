@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { GiftIdeaKind } from './giftIdeaKind';
 import type { GiftIdeaStatus } from './giftIdeaStatus';
 
 export interface GiftIdea {
@@ -14,6 +15,13 @@ export interface GiftIdea {
   priceRange: string;
   whereToLook: string;
   because: string;
+  /**
+     * Exact supplied love strings validated by the server; optional for older locally saved ideas.
+     * @minItems 1
+     * @maxItems 2
+     */
+  sourceLoves?: string[];
+  kind?: GiftIdeaKind;
   passedRules: string[];
   status: GiftIdeaStatus;
   rejectReason?: string;

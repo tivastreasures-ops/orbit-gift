@@ -8,6 +8,7 @@
 
 export * from './feedback';
 export * from './giftIdea';
+export * from './giftIdeaKind';
 export * from './giftIdeaStatus';
 export * from './giftInput';
 export * from './giftResult';

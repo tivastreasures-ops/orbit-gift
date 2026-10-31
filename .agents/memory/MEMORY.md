@@ -1,1 +1,2 @@
 - [Director approval rules](director-approval.md) — exact copy deck, unapproved card art stays blank, no accounts/database in MVP.
+- [Gift quality constraints](gift-quality.md) — preserve the six-kind/two-interest gates; use stronger generation and explicit repair feedback, not weaker checks.

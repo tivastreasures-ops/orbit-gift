@@ -8,9 +8,9 @@ export const openai = new OpenAI({
   maxRetries: 2,
 });
 
-export async function structured(prompt: string, input: unknown): Promise<unknown> {
+export async function structured(prompt: string, input: unknown, model = "gpt-5.4-mini"): Promise<unknown> {
   const result = await openai.chat.completions.create({
-    model: "gpt-5.4-mini",
+    model,
     max_completion_tokens: 8192,
     response_format: { type: "json_object" },
     messages: [

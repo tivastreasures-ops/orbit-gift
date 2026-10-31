@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { SkyLegend, SkyMap, SourceChip, isChildControl, type SkySelection } from '@/components/sky-map';
+import { resolveSources } from '@/lib/sources';
 import { Link } from 'wouter';
 import { Copy, Trash2, Plus, Sparkles } from 'lucide-react';
 import {
@@ -50,9 +52,9 @@ function ReturnedAnswers({ r }: { r: Recipient }) {
     setVals({ love: '', no: '', own: '', hint: '' });
   };
   const fields = [
-    ['love', CARD_TEXT.stumped.love],
-    ['no', CARD_TEXT.stumped.no],
-    ['own', CARD_TEXT.stumped.own],
+    ['love', COPY.giver.loves],
+    ['no', COPY.giver.nos],
+    ['own', COPY.giver.owned],
     ['hint', CARD_TEXT.stumped.hint],
   ] as const;
   return (
@@ -82,6 +84,7 @@ export default function Keepers() {
   const { recipients, gifts, chips } = useData();
   const [sel, setSel] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [pick, setPick] = useState<SkySelection | null>(null);
   const { toast } = useToast();
 
   if (!recipients.length) return <Intro />;
@@ -90,6 +93,17 @@ export default function Keepers() {
   const saved = gifts.filter((g) => g.recipientId === current.id && g.status === 'saved');
   const loves = chips.filter((c) => c.recipientId === current.id && c.type === 'love');
   const nos = chips.filter((c) => c.recipientId === current.id && c.type === 'refuse');
+  const loveList = loves.map((c) => ({ id: c.id, text: c.text }));
+  const srcOf = new Map(saved.map((g) => [g.id, resolveSources(g, loveList)]));
+  const counts = new Map<string, number>();
+  const goldIds = new Set<string>();
+  saved.forEach((g) => srcOf.get(g.id)?.ids.forEach((lid) => { counts.set(lid, (counts.get(lid) ?? 0) + 1); goldIds.add(lid); }));
+  const chosen = pick && srcOf.get(pick.giftId) ? pick : null;
+  const toggle = (gid: string) => {
+    const s = srcOf.get(gid);
+    if (!s) return;
+    setPick((cur) => (cur?.giftId === gid ? null : { giftId: gid, loveIds: s.ids }));
+  };
 
   const copyList = async () => {
     const text = [current.name, '', ...saved.map((g) => `- ${g.title} (${g.priceRange}) · ${g.whereToLook}`)].join('\n');
@@ -142,6 +156,30 @@ export default function Keepers() {
         })}
       </div>
 
+      <section className="glass rounded-3xl mt-6 p-5 sm:p-6 enter" style={{ ['--i' as string]: 2 }} data-testid="section-universe">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-display text-2xl" data-testid="text-universe-title">{COPY.sky.universe(current.name)}</h2>
+          <p className="text-sm text-muted-foreground tabular-nums" data-testid="text-universe-stats">{COPY.sky.stats(loves.length, nos.length, saved.length)}</p>
+        </div>
+        {loves.length === 0 && (
+          <p className="mt-6 mb-2 text-center font-display text-xl" data-testid="status-no-stars">{COPY.sky.empty}</p>
+        )}
+          <>
+            <SkyMap
+              key={current.id}
+              loves={loveList}
+              refusals={nos.map((c) => ({ id: c.id, text: c.text }))}
+              gifts={saved.map((g) => ({ id: g.id, sourceIds: srcOf.get(g.id)?.ids ?? [], saved: true }))}
+              goldIds={goldIds}
+              counts={counts}
+              selected={chosen}
+              label={COPY.sky.universe(current.name)}
+              className="mx-auto w-full max-w-2xl mt-2"
+            />
+            <SkyLegend showNo={nos.length > 0} />
+          </>
+      </section>
+
       <section className="mt-6 grid lg:grid-cols-[1fr_300px] gap-6">
         <div>
           <div className="flex flex-wrap gap-2 enter" style={{ ['--i' as string]: 2 }}>
@@ -162,9 +200,14 @@ export default function Keepers() {
           ) : (
             <ul className="mt-6 grid sm:grid-cols-2 gap-4">
               {saved.map((g, i) => (
-                <li key={g.id} className="glass rounded-3xl p-5 enter relative" style={{ ['--i' as string]: i + 2 }} data-testid={`card-saved-${g.id}`}>
+                <li
+                  key={g.id}
+                  className={`glass rounded-3xl p-5 enter relative ${srcOf.get(g.id) ? 'cursor-pointer' : ''} ${chosen?.giftId === g.id ? 'card-selected' : ''}`}
+                  onClick={(e) => { if (!isChildControl(e.target, e.currentTarget)) toggle(g.id); }}
+                  style={{ ['--i' as string]: i + 2 }} data-testid={`card-saved-${g.id}`}>
                   <span className="absolute top-5 right-5 w-2 h-2 rounded-full bg-gold shadow-[0_0_12px_hsl(42_80%_60%)]" aria-hidden="true" />
                   <h3 className="gift-title text-xl pr-6 leading-snug" data-testid={`text-saved-title-${g.id}`}>{g.title}</h3>
+                  <SourceChip names={srcOf.get(g.id)?.names ?? null} pressed={chosen?.giftId === g.id} onToggle={() => toggle(g.id)} testId={`button-source-${g.id}`} />
                   <p className="mt-2 text-gold text-sm font-medium">{COPY.results.price(g.priceRange)}</p>
                   <p className="text-sm text-muted-foreground">{COPY.results.where(g.whereToLook)}</p>
                   <p className="mt-2 text-sm">{COPY.results.because(g.because)}</p>
@@ -186,7 +229,7 @@ export default function Keepers() {
           <p className="text-sm text-muted-foreground mt-1">{[current.relationship, current.occasion].filter(Boolean).join(' · ')}</p>
           {loves.length > 0 && (
             <div className="mt-4">
-              <p className="text-xs font-semibold mb-2 text-gold">{CARD_TEXT.stumped.love}</p>
+              <p className="text-xs font-semibold mb-2 text-gold">{COPY.giver.loves}</p>
               <div className="flex flex-wrap gap-1.5">
                 {loves.map((c) => <span key={c.id} className="text-xs rounded-full px-2.5 py-1 bg-[hsl(42_60%_46%/0.14)] border border-[hsl(42_60%_60%/0.3)]">{c.text}</span>)}
               </div>
@@ -194,10 +237,16 @@ export default function Keepers() {
           )}
           {nos.length > 0 && (
             <div className="mt-4">
-              <p className="text-xs font-semibold mb-2 text-[hsl(8_70%_72%)]">{CARD_TEXT.stumped.no}</p>
+              <p className="text-xs font-semibold mb-2 text-[hsl(8_70%_72%)]">{COPY.giver.nos}</p>
               <div className="flex flex-wrap gap-1.5">
                 {nos.map((c) => <span key={c.id} className="text-xs rounded-full px-2.5 py-1 bg-[hsl(8_50%_40%/0.16)] border border-[hsl(8_60%_60%/0.3)]">{c.text}</span>)}
               </div>
+            </div>
+          )}
+          {current.owned.trim() && (
+            <div className="mt-4">
+              <p className="text-xs font-semibold mb-2 text-violet">{COPY.giver.owned}</p>
+              <p className="text-sm whitespace-pre-line text-muted-foreground" data-testid="text-current-owned">{current.owned}</p>
             </div>
           )}
         </aside>

@@ -60,6 +60,10 @@ One server-side interface exposes `searchEntity`, `getRelated`, and `describe`. 
 
 The LLM proposes structured candidate ideas. Plain TypeScript checks positive title/category/colour/brand/material fields, refusal aliases, ownership, rejection history, prior titles, and budget before any idea returns. The model is not the final eligibility judge. There must be six accepted candidates or the UI receives no results. Approximate prices and where-to-look suggestions are not verified product listings.
 
+The Director's quality contract also rejects generic merch without a named item/maker and colour-only suggestions. Each idea combines two supplied loves or one love plus the actual occasion/relationship, with validated source metadata. A full round contains one object, experience, consumable, handmade/small-maker piece, collectible, and wildcard. Gift generation uses `gpt-5.4`; entity lookup uses `gpt-5.4-mini`. Retries repair missing kinds without weakening any hard no. Catalogue existence and semantic relevance still depend on model facts, not an independently verified inventory.
+
+Results and Keepers show an interactive, device-local planet/love constellation with a labelled no-list asteroid belt. Source chips highlight only exact known source stars; unknown/legacy-unresolvable sources use the approved whole-sky fallback. Keepers' gold stars support saved gifts, and its lavender stars remain unexplored.
+
 Natural-language refusal matching is conservative token/alias matching, not a complete semantic ontology. New synonyms and complex ownership statements need explicit regression cases before release.
 
 ## Share cards and privacy

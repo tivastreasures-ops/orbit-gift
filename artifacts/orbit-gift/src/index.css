@@ -273,3 +273,19 @@ body .font-semibold, body .font-bold { font-weight: 500; }
   .hover-elevate-2:hover:not(.no-default-hover-elevate)::after, .active-elevate-2:active:not(.no-default-active-elevate)::after { background-color: var(--elevate-2); }
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after, .border.active-elevate:not(.no-active-interaction-elevate)::after, .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after, .border.active-elevate-2:not(.no-active-interaction-elevate)::after { inset: -1px; }
 }
+
+/* ---------- Sky map (interactive constellation) ---------- */
+.sky-label { font-family: var(--app-font-sans); font-size: 7.5px; letter-spacing: 0.02em; opacity: 0.85; pointer-events: none; }
+.sky-hit { cursor: pointer; outline: none; }
+.sky-hit:focus-visible > circle:first-child { stroke: hsl(var(--gold)); stroke-width: 1; }
+.sky-hit:hover .sky-asteroid { fill: hsl(245 18% 70% / 0.8); }
+.source-chip {
+  display: inline-flex; align-items: center; width: fit-content; max-width: 100%;
+  margin-top: 0.5rem; padding: 0.2rem 0.7rem; min-height: 28px; border-radius: 999px;
+  font-size: 0.78rem; color: hsl(var(--violet)); background: hsl(262 40% 30% / 0.25);
+  border: 1px dashed hsl(262 40% 60% / 0.35);
+}
+.source-chip-btn { border-style: solid; transition: border-color 0.2s, background-color 0.2s; }
+.source-chip-btn:hover { border-color: hsl(var(--violet) / 0.8); }
+.source-chip-btn[aria-pressed='true'] { color: hsl(46 90% 84%); border-color: hsl(var(--gold)); background: hsl(42 60% 46% / 0.18); }
+.card-selected { border-color: hsl(var(--gold) / 0.7) !important; }

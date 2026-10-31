@@ -29,6 +29,8 @@ export interface GiftInput {
   owned?: string;
   /** @maxLength 100 */
   occasion?: string;
+  /** @maxLength 100 */
+  relationship?: string;
   /**
      * @minimum 0
      * @maximum 100000

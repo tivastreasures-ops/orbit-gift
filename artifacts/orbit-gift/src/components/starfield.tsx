@@ -56,14 +56,14 @@ export function Starfield({ count = 80 }: { count?: number }) {
 
 /* ---------- Orbit constellation (planet = the person) ---------- */
 
-const W = 320;
-const H = 240;
-const CX = 160;
-const CY = 120;
+export const W = 320;
+export const H = 240;
+export const CX = 160;
+export const CY = 120;
 const TILT = (-14 * Math.PI) / 180;
 
 /** Point on the tilted orbital ellipse, with radial offset k (1 = on ring). */
-function onRing(angle: number, k: number) {
+export function onRing(angle: number, k: number) {
   const x = Math.cos(angle) * 128 * k;
   const y = Math.sin(angle) * 62 * k;
   return {
@@ -75,9 +75,9 @@ function onRing(angle: number, k: number) {
 export interface OrbitLove { id: string; text: string }
 export interface OrbitGift { id: string; loveId: string | null; saved?: boolean }
 
-type Pt = { id: string; x: number; y: number; a: number; r: number; gold: boolean };
+export type Pt = { id: string; x: number; y: number; a: number; k: number; r: number; gold: boolean };
 
-function lovePoints(loves: OrbitLove[]): Pt[] {
+export function lovePoints(loves: OrbitLove[]): Pt[] {
   return loves
     .map((l, index) => {
       const h = hash(`${l.id}|${l.text}`);
@@ -87,14 +87,64 @@ function lovePoints(loves: OrbitLove[]): Pt[] {
       const a = (index * 2.399963229728653 - Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
       const k = 0.94 + (((h >>> 12) % 100) / 100) * 0.16;
       const p = onRing(a, k);
-      return { id: l.id, x: p.x, y: p.y, a, r: 2.2 + ((h >>> 20) % 10) / 10, gold: (h >>> 8) % 3 === 0 };
+      return { id: l.id, x: p.x, y: p.y, a, k, r: 2.2 + ((h >>> 20) % 10) / 10, gold: (h >>> 8) % 3 === 0 };
     })
     .sort((p, q) => p.a - q.a);
 }
 
+/** Gift stars sit on this outer ring (radius well above the planet). */
+export const GIFT_K = 1.34;
+
+/**
+ * Path that follows the tilted ellipse from (a1,k1) to (a2,k2). Ring radii
+ * stay >= 0.94 (min ~58 units from centre vs. planet radius 46), so a path
+ * never crosses the central planet.
+ */
+export function ringPath(a1: number, k1: number, a2: number, k2: number, start = true) {
+  const steps = Math.max(4, Math.ceil(Math.abs(a2 - a1) / 0.1));
+  let d = '';
+  let len = 0;
+  let prev: { x: number; y: number } | null = null;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const p = onRing(a1 + (a2 - a1) * t, k1 + (k2 - k1) * t);
+    d += `${i === 0 ? (start ? 'M' : 'L') : 'L'}${p.x.toFixed(2)} ${p.y.toFixed(2)} `;
+    if (prev) len += Math.hypot(p.x - prev.x, p.y - prev.y);
+    prev = p;
+  }
+  return { d, len };
+}
+
+/** Consecutive (angle-sorted) loves joined along the ring: no chords, no crossings. */
+export function loveArcs(pts: Pt[]) {
+  if (pts.length < 2) return [];
+  const out: { key: string; d: string; len: number; from: string; to: string }[] = [];
+  const n = pts.length === 2 ? 1 : pts.length;
+  for (let i = 0; i < n; i++) {
+    const p = pts[i];
+    const q = pts[(i + 1) % pts.length];
+    const a2 = q.a <= p.a ? q.a + Math.PI * 2 : q.a;
+    const { d, len } = ringPath(p.a, p.k, a2, q.k);
+    out.push({ key: `${p.id}-${q.id}`, d, len, from: p.id, to: q.id });
+  }
+  return out;
+}
+
+/** Source star -> radially out to the gift ring -> along the outer ring to the gift. */
+export function giftRoute(src: Pt, giftAngle: number) {
+  const a = onRing(src.a, src.k);
+  const b = onRing(src.a, GIFT_K);
+  let delta = giftAngle - src.a;
+  delta = ((delta + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+  const arc = ringPath(src.a, GIFT_K, src.a + delta, GIFT_K, false);
+  return { d: `M${a.x.toFixed(2)} ${a.y.toFixed(2)} L${b.x.toFixed(2)} ${b.y.toFixed(2)} ${arc.d}`, len: Math.hypot(b.x - a.x, b.y - a.y) + arc.len };
+}
+
+export const giftAngle = (i: number, n: number) => -Math.PI / 2 + (i / Math.max(1, n)) * Math.PI * 2;
+
 const HERO: OrbitLove[] = Array.from({ length: 8 }, (_, i) => ({ id: `hero-${i}`, text: String(i * 7 + 3) }));
 
-function Star({ x, y, r, gold, glow, i, cls = 'orb-star' }: { x: number; y: number; r: number; gold: boolean; glow: string; i: number; cls?: string }) {
+export function Star({ x, y, r, gold, glow, i, cls = 'orb-star' }: { x: number; y: number; r: number; gold: boolean; glow: string; i: number; cls?: string }) {
   return (
     <g className={cls} style={{ ['--i' as string]: i, transformOrigin: `${x}px ${y}px` }}>
       <circle cx={x} cy={y} r={r * 3.2} fill={gold ? 'hsl(44 90% 70% / 0.16)' : 'hsl(48 60% 96% / 0.12)'} />
@@ -123,8 +173,9 @@ export function OrbitConstellation({
     const src = g.loveId ? byId.get(g.loveId) : undefined;
     // Six separated positions stay distinguishable even when several gifts
     // come from the same love. Each line still points to its real source.
-    const p = onRing(-Math.PI / 2 + (i / Math.max(1, gifts.length)) * Math.PI * 2, 1.34);
-    return { ...g, x: p.x, y: p.y, src };
+    const a = giftAngle(i, gifts.length);
+    const p = onRing(a, GIFT_K);
+    return { ...g, a, x: p.x, y: p.y, src };
   });
 
   return (
@@ -162,28 +213,14 @@ export function OrbitConstellation({
       <ellipse cx={CX} cy={CY} rx="128" ry="62" fill="none" stroke="hsl(262 60% 82% / 0.16)" strokeDasharray="2 6" transform={`rotate(-14 ${CX} ${CY})`} />
       <ellipse cx={CX} cy={CY + 3} rx="76" ry="13" fill="none" stroke={`url(#${ids.ring})`} strokeWidth="2.2" transform={`rotate(-14 ${CX} ${CY})`} />
 
-      {pts.length === 1 && (
-        <line x1={CX} y1={CY} x2={pts[0].x} y2={pts[0].y} stroke="hsl(44 80% 70%)" strokeOpacity="0.5" strokeWidth="1" className="orb-line" style={{ ['--len' as string]: 160, strokeDasharray: 160 }} />
-      )}
-      {pts.length > 1 &&
-        pts.map((p, i) => {
-          if (i === 0 && pts.length < 3) return null;
-          const q = pts[(i + 1) % pts.length];
-          if (i === pts.length - 1 && pts.length < 3) return null;
-          const len = Math.hypot(q.x - p.x, q.y - p.y);
-          return (
-            <line key={`l-${p.id}-${q.id}`} x1={p.x} y1={p.y} x2={q.x} y2={q.y} stroke="hsl(44 80% 70%)" strokeOpacity="0.5" strokeWidth="1" className="orb-line" style={{ ['--len' as string]: len, ['--i' as string]: i, strokeDasharray: len }} />
-          );
-        })}
-      {pts.length === 2 && (
-        <line x1={pts[0].x} y1={pts[0].y} x2={pts[1].x} y2={pts[1].y} stroke="hsl(44 80% 70%)" strokeOpacity="0.5" strokeWidth="1" className="orb-line" style={{ ['--len' as string]: Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y), strokeDasharray: Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y) }} />
-      )}
-
-      {giftPts.map((g, i) =>
-        g.src ? (
-          <line key={`gl-${g.id}`} x1={g.src.x} y1={g.src.y} x2={g.x} y2={g.y} stroke="hsl(44 80% 70%)" strokeOpacity="0.45" strokeWidth="1" className="orb-line gift-line" style={{ ['--len' as string]: Math.hypot(g.x - g.src.x, g.y - g.src.y), ['--i' as string]: i, strokeDasharray: Math.hypot(g.x - g.src.x, g.y - g.src.y) }} />
-        ) : null,
-      )}
+      {loveArcs(pts).map((l, i) => (
+        <path key={`l-${l.key}`} d={l.d} fill="none" stroke="hsl(44 80% 70%)" strokeOpacity="0.5" strokeWidth="1" className="orb-line" style={{ ['--len' as string]: l.len, ['--i' as string]: i, strokeDasharray: l.len }} />
+      ))}
+      {giftPts.map((g, i) => {
+        if (!g.src) return null;
+        const r = giftRoute(g.src, g.a);
+        return <path key={`gl-${g.id}`} d={r.d} fill="none" stroke="hsl(44 80% 70%)" strokeOpacity="0.45" strokeWidth="1" className="orb-line gift-line" style={{ ['--len' as string]: r.len, ['--i' as string]: i, strokeDasharray: r.len }} />;
+      })}
 
       {pts.map((p, i) => (
         <Star key={p.id} x={p.x} y={p.y} r={p.r} gold={p.gold} glow={ids.glow} i={i} />

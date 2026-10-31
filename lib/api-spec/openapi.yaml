@@ -94,6 +94,7 @@ components:
           items: { type: string, maxLength: 200 }
         owned: { type: string, maxLength: 2000 }
         occasion: { type: string, maxLength: 100 }
+        relationship: { type: string, maxLength: 100 }
         budgetMin: { type: number, minimum: 0, maximum: 100000 }
         budgetMax: { type: number, minimum: 0, maximum: 100000 }
         moreLike: { type: string, maxLength: 300 }
@@ -121,6 +122,15 @@ components:
         priceRange: { type: string }
         whereToLook: { type: string }
         because: { type: string }
+        sourceLoves:
+          type: array
+          minItems: 1
+          maxItems: 2
+          items: { type: string }
+          description: Exact supplied love strings validated by the server; optional for older locally saved ideas.
+        kind:
+          type: string
+          enum: [object, experience, consumable, maker, collectible, wildcard]
         passedRules:
           type: array
           items: { type: string }

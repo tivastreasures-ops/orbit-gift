@@ -47,6 +47,8 @@ export const generateGiftsBodyOwnedMax = 2000;
 
 export const generateGiftsBodyOccasionMax = 100;
 
+export const generateGiftsBodyRelationshipMax = 100;
+
 export const generateGiftsBodyBudgetMinMin = 0;
 export const generateGiftsBodyBudgetMinMax = 100000;
 
@@ -74,6 +76,7 @@ export const GenerateGiftsBody = zod.object({
   "entityIds": zod.array(zod.string().max(generateGiftsBodyEntityIdsItemMax)).max(generateGiftsBodyEntityIdsMax).optional(),
   "owned": zod.string().max(generateGiftsBodyOwnedMax).optional(),
   "occasion": zod.string().max(generateGiftsBodyOccasionMax).optional(),
+  "relationship": zod.string().max(generateGiftsBodyRelationshipMax).optional(),
   "budgetMin": zod.number().min(generateGiftsBodyBudgetMinMin).max(generateGiftsBodyBudgetMinMax),
   "budgetMax": zod.number().min(generateGiftsBodyBudgetMaxMin).max(generateGiftsBodyBudgetMaxMax),
   "moreLike": zod.string().max(generateGiftsBodyMoreLikeMax).optional(),
@@ -84,6 +87,10 @@ export const GenerateGiftsBody = zod.object({
   "previousTitles": zod.array(zod.string().max(generateGiftsBodyPreviousTitlesItemMax)).max(generateGiftsBodyPreviousTitlesMax).optional()
 })
 
+export const generateGiftsResponseIdeasItemSourceLovesMax = 2;
+
+
+
 export const GenerateGiftsResponse = zod.object({
   "ideas": zod.array(zod.object({
   "id": zod.string(),
@@ -92,6 +99,8 @@ export const GenerateGiftsResponse = zod.object({
   "priceRange": zod.string(),
   "whereToLook": zod.string(),
   "because": zod.string(),
+  "sourceLoves": zod.array(zod.string()).min(1).max(generateGiftsResponseIdeasItemSourceLovesMax).optional().describe('Exact supplied love strings validated by the server; optional for older locally saved ideas.'),
+  "kind": zod.enum(['object', 'experience', 'consumable', 'maker', 'collectible', 'wildcard']).optional(),
   "passedRules": zod.array(zod.string()),
   "status": zod.enum(['shown', 'saved', 'rejected']),
   "rejectReason": zod.string().optional(),

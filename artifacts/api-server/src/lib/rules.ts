@@ -1,10 +1,10 @@
 export type Candidate = {
   title: string; category: string; colours: string[]; brand: string; materials: string[];
-  priceMin: number; priceMax: number; whereToLook: string; love: string;
+  priceMin: number; priceMax: number; whereToLook: string; love?: string;
 };
 export function normal(value: string): string {
-  return value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, " ").trim();
+  return value.toLowerCase().normalize("NFKD").replace(/\p{M}/gu, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 const aliases: Record<string, string[]> = {
   pink: ["pink", "rose", "rosy", "blush", "magenta", "fuchsia", "salmon", "hot pink"],

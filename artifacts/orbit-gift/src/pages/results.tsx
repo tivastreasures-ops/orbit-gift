@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams, useSearch } from 'wouter';
 import { Heart, X, Sparkles, RotateCcw } from 'lucide-react';
 import { useGenerateGifts, type GiftIdea } from '@workspace/api-client-react';
-import { OrbitConstellation } from '@/components/starfield';
+import { SkyLegend, SkyMap, SourceChip, isChildControl, type SkySelection } from '@/components/sky-map';
+import { resolveSources, type ResolvedSources } from '@/lib/sources';
 import { MissingRecipient } from '@/components/flow-header';
 import { COPY, NEED } from '@/lib/copy';
 import { actions, useData } from '@/lib/store';
@@ -10,25 +11,6 @@ import { actions, useData } from '@/lib/store';
 function errorText(e: unknown) {
   if ((typeof navigator !== 'undefined' && !navigator.onLine) || e instanceof TypeError) return COPY.errors.offline;
   return COPY.errors.broke;
-}
-
-/**
- * The server preserves the exact source love in `because`. Match that first
- * (including one-character loves); whole-word matching supports older rounds.
- * Never invent a relationship when the source love has since been deleted.
- */
-function sourceLove(idea: GiftIdea, loves: { id: string; text: string }[]): string | null {
-  const because = idea.because.toLowerCase();
-  const exact = loves.find((love) => love.text.trim().toLowerCase() === because.trim());
-  if (exact) return exact.id;
-  let best: { id: string; len: number } | null = null;
-  for (const l of loves) {
-    const t = l.text.trim().toLowerCase();
-    if (t.length < 2) continue;
-    const esc = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    if (new RegExp(`(^|[^\\p{L}\\p{N}])${esc}($|[^\\p{L}\\p{N}])`, 'u').test(because) && (!best || t.length > best.len)) best = { id: l.id, len: t.length };
-  }
-  return best ? best.id : null;
 }
 
 function LoadingSky({ more }: { more: boolean }) {
@@ -62,13 +44,18 @@ function LoadingSky({ more }: { more: boolean }) {
   );
 }
 
-function GiftCard({ idea, index, onMore, busy }: { idea: GiftIdea; index: number; onMore: (t: string) => void; busy: boolean }) {
+function GiftCard({ idea, onMore, busy, src, selected, onSelect }: { idea: GiftIdea; onMore: (t: string) => void; busy: boolean; src: ResolvedSources | null; selected: boolean; onSelect: () => void }) {
   const [asking, setAsking] = useState(false);
   const saved = idea.status === 'saved';
   return (
-    <article className="glass rounded-3xl p-5 sm:p-6 flex flex-col relative" data-testid={`card-gift-${idea.id}`}>
+    <article
+      className={`glass rounded-3xl p-5 sm:p-6 flex flex-col relative ${src ? 'cursor-pointer' : ''} ${selected ? 'card-selected' : ''}`}
+      onClick={(e) => { if (src && !isChildControl(e.target, e.currentTarget)) onSelect(); }}
+      data-testid={`card-gift-${idea.id}`}
+    >
       <span className={`absolute -top-1.5 left-7 w-3 h-3 rounded-full ${saved ? 'bg-gold shadow-[0_0_16px_hsl(42_90%_60%)]' : 'bg-[hsl(48_90%_90%)] shadow-[0_0_10px_hsl(48_90%_80%/0.8)]'}`} aria-hidden="true" />
       <h3 className="gift-title text-xl sm:text-[1.4rem] leading-snug" data-testid={`text-gift-title-${idea.id}`}>{idea.title}</h3>
+      <SourceChip names={src?.names ?? null} pressed={selected} onToggle={onSelect} testId={`button-source-${idea.id}`} />
       <dl className="mt-3 space-y-1.5 text-[0.95rem]">
         <dd className="text-gold font-medium" data-testid={`text-price-${idea.id}`}>{COPY.results.price(idea.priceRange)}</dd>
         <dd className="text-muted-foreground" data-testid={`text-where-${idea.id}`}>{COPY.results.where(idea.whereToLook)}</dd>
@@ -130,7 +117,7 @@ export default function ResultsPage() {
   const gen = useGenerateGifts();
   const [phase, setPhase] = useState<'idle' | 'loading' | 'more'>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [filtered, setFiltered] = useState(0);
+  const [sel, setSel] = useState<SkySelection | null>(null);
   const [departing, setDeparting] = useState<string[]>([]);
   const [lastMore, setLastMore] = useState<string | undefined>(undefined);
   const started = useRef(false);
@@ -153,6 +140,7 @@ export default function ResultsPage() {
           entityIds: mine.filter((c) => c.type === 'love' && c.matchedEntityId).map((c) => c.matchedEntityId as string).slice(0, 30),
           owned: rec.owned ? rec.owned.slice(0, 2000) : undefined,
           occasion: rec.occasion || undefined,
+          relationship: rec.relationship || undefined,
           budgetMin: rec.budgetMin,
           budgetMax: rec.budgetMax,
           moreLike: moreLike?.slice(0, 300),
@@ -161,7 +149,7 @@ export default function ResultsPage() {
         },
       });
       if (res.fallback) actions.flagBackup();
-      setFiltered(res.filteredCount);
+      setSel(null);
       actions.addRound(rec.id, res.ideas);
       setDeparting([]);
     } catch (e) {
@@ -202,6 +190,17 @@ export default function ResultsPage() {
   const busy = phase !== 'idle';
   const loveList = chips.filter((c) => c.recipientId === r.id && c.type === 'love').map((c) => ({ id: c.id, text: c.text }));
   const visible = roundIdeas.filter((g) => g.status !== 'rejected');
+  const refusalList = chips.filter((c) => c.recipientId === r.id && c.type === 'refuse').map((c) => ({ id: c.id, text: c.text }));
+  const srcOf = new Map(roundIdeas.map((g) => [g.id, resolveSources(g, loveList)]));
+  const counts = new Map<string, number>();
+  roundIdeas.forEach((g) => srcOf.get(g.id)?.ids.forEach((lid) => counts.set(lid, (counts.get(lid) ?? 0) + 1)));
+  const goldIds = new Set<string>();
+  gifts.filter((g) => g.recipientId === r.id && g.status === 'saved').forEach((g) => resolveSources(g, loveList)?.ids.forEach((lid) => goldIds.add(lid)));
+  const toggle = (g: GiftIdea) => {
+    const s = srcOf.get(g.id);
+    if (!s) return;
+    setSel((cur) => (cur?.giftId === g.id ? null : { giftId: g.id, loveIds: s.ids }));
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-8 sm:pt-12 pb-6">
@@ -209,7 +208,7 @@ export default function ResultsPage() {
         <Link href={`/recipient/${r.id}/refusals`} className="text-sm text-muted-foreground hover:text-gold" data-testid="link-back-refusals">
           <span className="copy-needed">{NEED('back to edit loves and no\'s link')}</span>
         </Link>
-        <span className="ml-auto wordmark text-gold">{r.name}</span>
+        <span className="ml-auto min-w-0 max-w-[50%] truncate wordmark text-gold">{r.name}</span>
       </div>
 
       {phase === 'loading' ? (
@@ -237,34 +236,27 @@ export default function ResultsPage() {
       ) : (
         <>
           <header className="mt-6">
-            <OrbitConstellation
+            <p className="text-sm text-violet mb-2">{COPY.sky.constellation(r.name)}</p>
+            <SkyMap
               key={roundIds.join('|')}
               loves={loveList}
-              gifts={roundIdeas.map((g) => ({ id: g.id, loveId: sourceLove(g, loveList), saved: g.status === 'saved' }))}
-              className="w-full max-w-md h-auto"
+              refusals={refusalList}
+              gifts={roundIdeas.map((g) => ({ id: g.id, sourceIds: srcOf.get(g.id)?.ids ?? [], saved: g.status === 'saved' }))}
+              goldIds={goldIds}
+              counts={counts}
+              selected={sel}
+              label={COPY.sky.constellation(r.name)}
+              className="w-full max-w-xl"
             />
-            <h1 className="mt-2 text-4xl sm:text-5xl tracking-tight leading-[1.05]" data-testid="text-results-heading">{COPY.results.heading}</h1>
+            <SkyLegend showNo={refusalList.length > 0} />
+            <h1 className="mt-4 text-4xl sm:text-5xl tracking-tight leading-[1.05]" data-testid="text-results-heading">{COPY.results.heading}</h1>
             <p className="mt-3 text-lg text-muted-foreground">{COPY.results.subhead}</p>
-            {filtered > 0 && (
-              <div className="mt-4 flex items-center gap-3 h-6" data-testid="status-asteroids">
-                {Array.from({ length: Math.min(filtered, 8) }, (_, i) => (
-                  <span
-                    key={i}
-                    role="img"
-                    aria-label={COPY.results.asteroid}
-                    title={COPY.results.asteroid}
-                    className="asteroid block w-2.5 h-2 rounded-[40%_60%_55%_45%] bg-[hsl(245_14%_48%)]"
-                    style={{ ['--d' as string]: `${7 + i * 1.3}s` }}
-                  />
-                ))}
-              </div>
-            )}
           </header>
           {phase === 'more' && <LoadingSky more />}
           {phase !== 'more' && (
             <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 relative">
-              {visible.map((g, i) => (
-                <GiftCard key={g.id} idea={g} index={i} onMore={(t) => void run(t)} busy={busy} />
+              {visible.map((g) => (
+                <GiftCard key={g.id} idea={g} onMore={(t) => void run(t)} busy={busy} src={srcOf.get(g.id) ?? null} selected={sel?.giftId === g.id} onSelect={() => toggle(g)} />
               ))}
               {departing.length > 0 && (
                 <div className="absolute right-4 top-0 flex gap-4" aria-live="polite">

@@ -55,6 +55,8 @@ export interface GiftInput {
   owned?: string;
   /** @maxLength 100 */
   occasion?: string;
+  /** @maxLength 100 */
+  relationship?: string;
   /**
      * @minimum 0
      * @maximum 100000
@@ -76,6 +78,18 @@ export interface GiftInput {
   previousTitles?: string[];
 }
 
+export type GiftIdeaKind = typeof GiftIdeaKind[keyof typeof GiftIdeaKind];
+
+
+export const GiftIdeaKind = {
+  object: 'object',
+  experience: 'experience',
+  consumable: 'consumable',
+  maker: 'maker',
+  collectible: 'collectible',
+  wildcard: 'wildcard',
+} as const;
+
 export type GiftIdeaStatus = typeof GiftIdeaStatus[keyof typeof GiftIdeaStatus];
 
 
@@ -92,6 +106,13 @@ export interface GiftIdea {
   priceRange: string;
   whereToLook: string;
   because: string;
+  /**
+     * Exact supplied love strings validated by the server; optional for older locally saved ideas.
+     * @minItems 1
+     * @maxItems 2
+     */
+  sourceLoves?: string[];
+  kind?: GiftIdeaKind;
   passedRules: string[];
   status: GiftIdeaStatus;
   rejectReason?: string;
