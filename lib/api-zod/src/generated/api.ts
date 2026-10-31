@@ -43,6 +43,12 @@ export const generateGiftsBodyEntityIdsItemMax = 200;
 
 export const generateGiftsBodyEntityIdsMax = 30;
 
+export const generateGiftsBodyMatchedLovesItemLoveMax = 200;
+
+export const generateGiftsBodyMatchedLovesItemEntityIdMax = 200;
+
+export const generateGiftsBodyMatchedLovesMax = 30;
+
 export const generateGiftsBodyOwnedMax = 2000;
 
 export const generateGiftsBodyOccasionMax = 100;
@@ -56,6 +62,10 @@ export const generateGiftsBodyBudgetMaxMin = 0;
 export const generateGiftsBodyBudgetMaxMax = 100000;
 
 export const generateGiftsBodyMoreLikeMax = 300;
+
+export const generateGiftsBodyMoreLikeSeedsItemMax = 300;
+
+export const generateGiftsBodyMoreLikeSeedsMax = 30;
 
 export const generateGiftsBodyRejectedItemTitleMax = 300;
 
@@ -74,12 +84,17 @@ export const GenerateGiftsBody = zod.object({
   "loves": zod.array(zod.string().max(generateGiftsBodyLovesItemMax)).max(generateGiftsBodyLovesMax),
   "refusals": zod.array(zod.string().max(generateGiftsBodyRefusalsItemMax)).max(generateGiftsBodyRefusalsMax),
   "entityIds": zod.array(zod.string().max(generateGiftsBodyEntityIdsItemMax)).max(generateGiftsBodyEntityIdsMax).optional(),
+  "matchedLoves": zod.array(zod.object({
+  "love": zod.string().max(generateGiftsBodyMatchedLovesItemLoveMax),
+  "entityId": zod.string().max(generateGiftsBodyMatchedLovesItemEntityIdMax)
+})).max(generateGiftsBodyMatchedLovesMax).optional(),
   "owned": zod.string().max(generateGiftsBodyOwnedMax).optional(),
   "occasion": zod.string().max(generateGiftsBodyOccasionMax).optional(),
   "relationship": zod.string().max(generateGiftsBodyRelationshipMax).optional(),
   "budgetMin": zod.number().min(generateGiftsBodyBudgetMinMin).max(generateGiftsBodyBudgetMinMax),
   "budgetMax": zod.number().min(generateGiftsBodyBudgetMaxMin).max(generateGiftsBodyBudgetMaxMax),
   "moreLike": zod.string().max(generateGiftsBodyMoreLikeMax).optional(),
+  "moreLikeSeeds": zod.array(zod.string().max(generateGiftsBodyMoreLikeSeedsItemMax)).max(generateGiftsBodyMoreLikeSeedsMax).optional(),
   "rejected": zod.array(zod.object({
   "title": zod.string().max(generateGiftsBodyRejectedItemTitleMax),
   "reason": zod.string().max(generateGiftsBodyRejectedItemReasonMax)
@@ -110,7 +125,18 @@ export const GenerateGiftsResponse = zod.object({
   "materials": zod.array(zod.string())
 })),
   "fallback": zod.boolean(),
-  "filteredCount": zod.number().int()
+  "filteredCount": zod.number().int(),
+  "diagnostics": zod.object({
+  "claudeCalls": zod.number().int(),
+  "expansionCalls": zod.number().int(),
+  "refusalCalls": zod.number().int(),
+  "generationCalls": zod.number().int(),
+  "criticCalls": zod.number().int(),
+  "rounds": zod.number().int(),
+  "profileCacheHit": zod.boolean(),
+  "model": zod.string(),
+  "helperModel": zod.string()
+}).optional()
 })
 
 

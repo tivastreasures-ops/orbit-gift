@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Feedback } from './feedback';
+import type { GiftInputMatchedLovesItem } from './giftInputMatchedLovesItem';
 
 export interface GiftInput {
   /** @maxLength 100 */
@@ -25,6 +26,8 @@ export interface GiftInput {
      * @items.maxLength 200
      */
   entityIds?: string[];
+  /** @maxItems 30 */
+  matchedLoves?: GiftInputMatchedLovesItem[];
   /** @maxLength 2000 */
   owned?: string;
   /** @maxLength 100 */
@@ -43,6 +46,11 @@ export interface GiftInput {
   budgetMax: number;
   /** @maxLength 300 */
   moreLike?: string;
+  /**
+     * @maxItems 30
+     * @items.maxLength 300
+     */
+  moreLikeSeeds?: string[];
   /** @maxItems 200 */
   rejected?: Feedback[];
   /**

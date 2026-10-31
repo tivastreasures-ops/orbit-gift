@@ -4,7 +4,8 @@ import { withTaste } from "../lib/taste-adapter";
 import { generate } from "../lib/gifts";
 
 const router: IRouter = Router();
-// In-memory bounded concurrency prevents accidental parallel API bills; no profile storage.
+// Bounded concurrency prevents accidental parallel API bills. Derived expansion
+// caches are bounded/ephemeral; no persistent recipient storage.
 let active = 0;
 router.use(["/taste/search", "/gifts/generate"], (_req, res, next) => {
   res.setHeader("Cache-Control", "no-store");

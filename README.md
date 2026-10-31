@@ -12,17 +12,17 @@ Names, headings, labels, and card footers are live text. Approved share-card art
 
 ## Stack
 
-React, Vite, TypeScript, React Query, Node/Express, OpenAPI/Orval/Zod, browser localStorage, browser canvas. OpenAI access uses Replit AI Integrations. Qloo is a server-side optional taste adapter. A database package ships with the starter but is not used by this application.
+React, Vite, TypeScript, React Query, Node/Express, OpenAPI/Orval/Zod, browser localStorage, browser canvas. All AI calls use the direct Anthropic Messages API; no Replit AI proxy or OpenAI SDK is used. Wikipedia provides free taste disambiguation. Qloo remains an optional, later server-side taste adapter. A database package ships with the starter but is not used by this application.
 
 ## Run on Replit
 
 1. Install dependencies with `pnpm install`.
 2. Run the managed workflows `artifacts/api-server: API Server` and `artifacts/orbit-gift: web`. Their routing and environment are managed by Replit.
-3. Replit AI Integrations supplies `AI_INTEGRATIONS_OPENAI_BASE_URL` and `AI_INTEGRATIONS_OPENAI_API_KEY` to the backend. No separate OpenAI key is required on Replit. AI usage is billed to Replit credits.
-4. Create **QLOO_API_KEY** in Tools → Secrets with an empty value. Add your Qloo key there only when ready. If the Secrets UI does not accept an empty value, leave it absent: missing and empty are treated identically.
+3. Add **ANTHROPIC_API_KEY** through Tools → Secrets (or the secure secret-entry form), never in source or chat. It is server-only. No key means the existing error copy, not another AI provider.
+4. **ANTHROPIC_MODEL** defaults to `claude-sonnet-5-5`, the current Sonnet ID in [Anthropic's model documentation](https://platform.claude.com/docs/en/about-claude/models/overview). **ANTHROPIC_HELPER_MODEL** is optional and defaults to the same value. Set it later to a cheaper supported Claude model if desired. No Qloo key is needed now.
 5. Open Preview. Profiles and keepers live in this browser only.
 
-The agent environment exposes a secure secret-entry form but no supported callback for silently creating an empty secret. Therefore creation of the empty Qloo secret remains an explicit setup item, not a claim that it has been created.
+Replit does not accept a truly empty secret. If `ANTHROPIC_API_KEY` is absent, enter/link it securely; do not use a dummy value. Old platform-managed AI Integration entries, if still shown in Connectors/Secrets, are unused by this app. Remove the old connection through its Manage control; do not delete unrelated account secrets.
 
 ## Run locally
 
@@ -52,7 +52,7 @@ localhost:8080 {
 
 Visit the proxy origin, not Vite directly. The completion URL and footer use the current app origin; publish the app before sending links to someone who cannot access your preview.
 
-Outside Replit, configure an OpenAI-compatible URL and key in the backend's `AI_INTEGRATIONS_OPENAI_BASE_URL` and `AI_INTEGRATIONS_OPENAI_API_KEY` environment variables. Never put these in `VITE_*` variables or commit them.
+Outside Replit, provide server-only `ANTHROPIC_API_KEY` and optionally `ANTHROPIC_MODEL`/`ANTHROPIC_HELPER_MODEL`. Calls go only to `https://api.anthropic.com/v1/messages`. Never put credentials in `VITE_*` variables or commit them.
 
 ## Taste adapter and fallback
 
@@ -60,7 +60,11 @@ One server-side interface exposes `searchEntity`, `getRelated`, and `describe`. 
 
 The LLM proposes structured candidate ideas. Plain TypeScript checks positive title/category/colour/brand/material fields, refusal aliases, ownership, rejection history, prior titles, and budget before any idea returns. The model is not the final eligibility judge. There must be six accepted candidates or the UI receives no results. Approximate prices and where-to-look suggestions are not verified product listings.
 
-The Director's quality contract also rejects generic merch without a named item/maker and colour-only suggestions. Each idea combines two supplied loves or one love plus the actual occasion/relationship, with validated source metadata. A full round contains one object, experience, consumable, handmade/small-maker piece, collectible, and wildcard. Gift generation uses `gpt-5.4`; entity lookup uses `gpt-5.4-mini`. Retries repair missing kinds without weakening any hard no. Catalogue existence and semantic relevance still depend on model facts, not an independently verified inventory.
+The Director's quality contract also rejects generic merch without a named item/maker and colour-only suggestions. Each idea combines two supplied loves or one love plus the actual occasion/relationship, with validated source metadata. A full round contains one object, experience, consumable, handmade/small-maker piece, collectible, and wildcard. Claude expands the Wikipedia-resolved taste profile and hard no's, generates about 12 candidates, then independently critiques specificity, combinations, budget, novelty and kind. Code drops forbidden/invalid candidates, selects the best eligible candidate per kind, and tells retries exactly what failed. Catalogue existence and semantic relevance still depend on model facts, not an independently verified inventory.
+
+Derived expansions live only in bounded server-memory caches for six hours; edits/model changes invalidate their keys, refusal edits expand only new terms, and a restart clears them. Profiles, keepers and accumulated More like this seeds remain device-local. With refusals, a cold successful round normally uses four Claude calls (taste expansion, refusal expansion, generation, critic); a fully cached round uses two. Up to three generation/critic pairs means at most eight cold or six warm calls. Wikipedia typeahead uses zero Claude calls. Actual per-search counts are returned in `diagnostics`.
+
+Run `pnpm test:gifts` after every change (also runs before API builds). These deterministic transport fixtures test the contract, not model quality. Run `pnpm test:gifts:live` with a valid key for real fixed-profile evaluation; it updates the marked `BUILD.md` table and exits nonzero for missing credentials, missing profile details or incomplete rounds. It never substitutes mocked gifts. Wolfboy awaits the Director's actual profile; the easy/sparse fictional fixtures are Mira and Sol.
 
 Results and Keepers show an interactive, device-local planet/love constellation with a labelled no-list asteroid belt. Source chips highlight only exact known source stars; unknown/legacy-unresolvable sources use the approved whole-sky fallback. Keepers' gold stars support saved gifts, and its lavender stars remain unexplored.
 

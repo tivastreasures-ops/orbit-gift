@@ -8,13 +8,16 @@ export function ChipEditor({ recipientId, type, placeholder }: { recipientId: st
   const { chips } = useData();
   const mine = chips.filter((c) => c.recipientId === recipientId && c.type === type);
   const [value, setValue] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const search = useSearchTaste();
 
   const add = async () => {
     const text = value.trim().slice(0, 200);
     if (!text) return;
+    setError(null);
     setValue('');
     const id = actions.addChip({ recipientId, text, type, kind: '', status: 'pending' });
+    if (type === 'refuse') { actions.updateChip(id, { status: 'plain' }); return; }
     try {
       const res = await search.mutateAsync({ data: { text } });
       if (res.fallback) actions.flagBackup();
@@ -22,6 +25,7 @@ export function ChipEditor({ recipientId, type, placeholder }: { recipientId: st
       else actions.updateChip(id, { status: 'nomatch' });
     } catch {
       actions.updateChip(id, { status: 'nomatch' });
+      setError(COPY.errors.broke);
     }
   };
 
@@ -43,6 +47,7 @@ export function ChipEditor({ recipientId, type, placeholder }: { recipientId: st
         aria-label={placeholder}
         data-testid={`input-${type}-chip`}
       />
+      {error && <p role="alert" className="mt-3 text-gold">{error}</p>}
       <ul className="mt-5 flex flex-col gap-3" aria-live="polite">
         {mine.map((c, i) => (
           <ChipRow key={c.id} chip={c} index={i} />

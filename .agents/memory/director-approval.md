@@ -20,3 +20,9 @@ No accounts or database in this MVP; browser-local profiles/keepers, no automati
 **Why:** The Director specified a no-account, device-local gift workflow with manual return entry.
 
 **How to apply:** Do not expand persistence or sharing beyond this contract without explicit direction.
+
+All app AI calls must use the direct Anthropic API, not Replit AI Integrations or OpenAI. Missing keys or API failures must use existing error copy, never another provider.
+
+**Why:** The Director explicitly rejects Replit AI Integrations/OpenAI for this product.
+
+**How to apply:** Keep credentials server-only; check Anthropic's current documentation when changing the Sonnet default. A cheaper helper may still be Claude. Qloo remains optional/later, not a required key or substitute AI provider.

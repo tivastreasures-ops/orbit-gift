@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
+    "prebuild": "pnpm --filter @workspace/scripts run test:gifts",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -16,7 +17,6 @@
     "cors": "^2.8.6",
     "drizzle-orm": "catalog:",
     "express": "^5.3.0",
-    "openai": "^7.45.1",
     "pino": "^9.14.0",
     "pino-http": "^10.5.0",
     "zod": "catalog:"

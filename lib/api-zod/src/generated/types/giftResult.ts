@@ -6,9 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { GiftIdea } from './giftIdea';
+import type { GiftResultDiagnostics } from './giftResultDiagnostics';
 
 export interface GiftResult {
   ideas: GiftIdea[];
   fallback: boolean;
   filteredCount: number;
+  diagnostics?: GiftResultDiagnostics;
 }

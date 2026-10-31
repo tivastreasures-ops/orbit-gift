@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { structured } from "./llm";
+import { searchWikipedia } from "./wikipedia";
 
 const entity = z.object({ id: z.string(), name: z.string(), kind: z.string() });
 export type Entity = z.infer<typeof entity>;
@@ -9,13 +10,10 @@ export interface TasteAdapter {
   describe(entityId: string): Promise<string>;
 }
 
-export const llmTaste: TasteAdapter = {
+export const claudeTaste: TasteAdapter = {
   async searchEntity(text, kind) {
-    const data = await structured(
-      'Identify up to 4 real candidate entities for this taste chip. Disambiguate ambiguous names across kinds (band vs river etc). Never invent facts. Unknown entries return no candidates. Return {"matches":[{"id":"llm:kind:name","name":"canonical name","kind":"band/food/character/etc"}]}.',
-      { text, kind },
-    );
-    return z.object({ matches: z.array(entity).max(4) }).parse(data).matches;
+    const matches = await searchWikipedia(text);
+    return matches.filter(match => !kind || match.kind === kind).map(({ id, name, kind }) => ({ id, name, kind }));
   },
   async getRelated(ids, domains) {
     if (!ids.length) return [];
@@ -92,5 +90,5 @@ export async function withTaste<T>(fn: (adapter: TasteAdapter) => Promise<T>): P
   if (process.env.QLOO_API_KEY?.trim()) {
     try { return { value: await fn(qlooTaste), fallback: false }; } catch { /* explicitly reported to client */ }
   }
-  return { value: await fn(llmTaste), fallback: true };
+  return { value: await fn(claudeTaste), fallback: true };
 }

@@ -26,6 +26,13 @@ export interface TasteResult {
   fallback: boolean;
 }
 
+export type GiftInputMatchedLovesItem = {
+  /** @maxLength 200 */
+  love: string;
+  /** @maxLength 200 */
+  entityId: string;
+};
+
 export interface Feedback {
   /** @maxLength 300 */
   title: string;
@@ -51,6 +58,8 @@ export interface GiftInput {
      * @items.maxLength 200
      */
   entityIds?: string[];
+  /** @maxItems 30 */
+  matchedLoves?: GiftInputMatchedLovesItem[];
   /** @maxLength 2000 */
   owned?: string;
   /** @maxLength 100 */
@@ -69,6 +78,11 @@ export interface GiftInput {
   budgetMax: number;
   /** @maxLength 300 */
   moreLike?: string;
+  /**
+     * @maxItems 30
+     * @items.maxLength 300
+     */
+  moreLikeSeeds?: string[];
   /** @maxItems 200 */
   rejected?: Feedback[];
   /**
@@ -122,10 +136,23 @@ export interface GiftIdea {
   materials: string[];
 }
 
+export type GiftResultDiagnostics = {
+  claudeCalls: number;
+  expansionCalls: number;
+  refusalCalls: number;
+  generationCalls: number;
+  criticCalls: number;
+  rounds: number;
+  profileCacheHit: boolean;
+  model: string;
+  helperModel: string;
+};
+
 export interface GiftResult {
   ideas: GiftIdea[];
   fallback: boolean;
   filteredCount: number;
+  diagnostics?: GiftResultDiagnostics;
 }
 
 export interface HealthStatus {

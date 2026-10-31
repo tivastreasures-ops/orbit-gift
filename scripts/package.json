@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:gifts": "tsx --test ../artifacts/api-server/src/lib/quality.test.ts ../artifacts/api-server/src/lib/pipeline.test.ts ../artifacts/orbit-gift/src/lib/universe.test.ts",
+    "gifts:live": "tsx ../artifacts/api-server/src/lib/gift-eval.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",

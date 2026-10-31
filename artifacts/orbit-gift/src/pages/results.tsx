@@ -112,7 +112,7 @@ export default function ResultsPage() {
   const { id } = useParams<{ id: string }>();
   const search = useSearch();
   const [, setLocation] = useLocation();
-  const { recipients, chips, gifts, rounds, settings } = useData();
+  const { recipients, chips, gifts, rounds, settings, seeds } = useData();
   const r = recipients.find((x) => x.id === id);
   const gen = useGenerateGifts();
   const [phase, setPhase] = useState<'idle' | 'loading' | 'more'>('idle');
@@ -131,6 +131,7 @@ export default function ResultsPage() {
     setPhase(moreLike ? 'more' : 'loading');
     const mine = chips.filter((c) => c.recipientId === rec.id);
     const all = gifts.filter((g) => g.recipientId === rec.id);
+    const moreLikeSeeds = moreLike ? actions.addSeed(rec.id, moreLike) : (seeds[rec.id] ?? []);
     try {
       const res = await gen.mutateAsync({
         data: {
@@ -138,12 +139,14 @@ export default function ResultsPage() {
           loves: mine.filter((c) => c.type === 'love').map((c) => c.text).slice(0, 30),
           refusals: mine.filter((c) => c.type === 'refuse').map((c) => c.text).slice(0, 30),
           entityIds: mine.filter((c) => c.type === 'love' && c.matchedEntityId).map((c) => c.matchedEntityId as string).slice(0, 30),
+          matchedLoves: mine.filter(c => c.type === 'love' && c.status === 'confirmed' && c.matchedEntityId).map(c => ({ love: c.text, entityId: c.matchedEntityId! })).slice(0, 30),
           owned: rec.owned ? rec.owned.slice(0, 2000) : undefined,
           occasion: rec.occasion || undefined,
           relationship: rec.relationship || undefined,
           budgetMin: rec.budgetMin,
           budgetMax: rec.budgetMax,
           moreLike: moreLike?.slice(0, 300),
+          moreLikeSeeds,
           rejected: all.filter((g) => g.status === 'rejected').map((g) => ({ title: g.title.slice(0, 300), reason: (g.rejectReason ?? '').slice(0, 100) })).slice(-200),
           previousTitles: all.map((g) => g.title.slice(0, 300)).slice(-200),
         },

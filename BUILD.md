@@ -11,7 +11,7 @@ Excluded as specified: accounts, database persistence/sync, product purchase lin
 1. Created a standalone React/Vite/TypeScript web application at `/`, keeping the shared Express API at `/api`.
 2. Defined the taste lookup and gift-generation OpenAPI contracts, then generated React Query hooks and server Zod validators.
 3. Started frontend implementation from the attached specification. All profile/save/edit/delete operations remain browser-side; server calls are transient lookup/generation.
-4. Configured Replit AI Integrations for OpenAI. The backend uses actual LLM responses when Qloo is empty or unavailable. No Qloo key is embedded or assumed.
+4. All current AI calls use the direct Anthropic Messages API. The original OpenAI/Replit AI Integration implementation has been removed. No Qloo key is needed now.
 5. Implemented a server-only interchangeable taste adapter with `searchEntity`, `getRelated`, and `describe`; explicit mock adapter is for development, not a hidden runtime substitute.
 6. Implemented structured candidates plus a deterministic refusal/ownership/rejection/duplicate/budget check. Common aliases include pink shades, dresses/gowns, Microsoft/Windows product families, leather, wool, candles. Failed ideas are never displayed. Fewer than six accepted candidates returns an empty result rather than a misleading partial set.
 7. Implemented the five screens: recipient details, loves and match correction, hard no's and ownership, six results and refinement, Keepers with multi-recipient lists and copy/remove.
@@ -96,7 +96,7 @@ Giver-only profile/returned-answer headings: `Things they love`, `Hard no's`, `A
 - Generic t-shirt/hoodie/mug/poster/wall-art/phone-case/tote suggestions fail without a named maker or specific named item actually in the title. Named-item metadata cannot merely repeat a generic category. Colour/context labels alone are not an idea.
 - Maker, experience, consumable and collectible kinds need positive supporting metadata. All candidates still pass the existing hard-no/ownership/rejection/duplicate and budget checks; no rule is weakened to fill a quota.
 - Rejected contract violations are fed back into the next generation round, without exposing candidate/user data in HTTP logs.
-- Gift generation now uses `gpt-5.4`; taste/entity lookup retains `gpt-5.4-mini`. The small model repeatedly failed the multi-interest/context contract even with explicit examples. The stronger model produced the complete six-kind set while the gates remained intact. This changes generation cost/latency, not the Qloo-empty LLM-fallback contract.
+- Historical model decision (superseded by the direct-Claude revision below): stronger generation replaced the initial small model because it repeatedly failed the multi-interest/context contract. The same quality gates remain intact in the Claude pipeline.
 - The prompt prohibits fictitious official collaborations, invented editions, availability and exact-price claims. Paired real items, handmade concepts and one-love-plus-real-context ideas are preferred over fabricated crossover products. Positive metadata checks cannot independently verify catalogue existence, factual model claims or semantic relevance; these are gift ideas, not verified purchasable listings.
 
 ### Verification
@@ -154,3 +154,62 @@ Final art must have blank live-text/footer areas and original constellation sign
 Public repository: https://github.com/tivastreasures-ops/orbit-gift
 
 Source is uploaded through the authorized Replit GitHub connection as a new snapshot, not by exposing credentials or copying private Git history. The final commit hash is reported in the handoff; the hash is not embedded in the commit itself.
+
+
+## Director direct-Claude and taste-pipeline revision
+
+### Provider and configuration
+
+- Removed the OpenAI SDK dependency, its lockfile entry, GPT model literals, proxy base URL and all `AI_INTEGRATIONS_*` runtime code paths. Every remaining AI operation uses `https://api.anthropic.com/v1/messages` directly. Wikipedia search is not an AI call.
+- Runtime credential: server-only Replit Secret `ANTHROPIC_API_KEY`. Metadata inspection found no available secret with that name. No key has been read, logged, embedded, committed or replaced with a dummy.
+- Replit cannot store a truly empty secret; the Director must enter/link the key securely. A name in a setup guide is not a created secret. The secure request names the correct key without exposing its value.
+- Non-secret `ANTHROPIC_MODEL` is set to `claude-sonnet-5-5`. Anthropic's [current model overview](https://platform.claude.com/docs/en/about-claude/models/overview), consulted during this change, lists Claude Sonnet 5.5 with that API ID. `ANTHROPIC_HELPER_MODEL` is intentionally unset: it defaults to the main model and can later be changed to a cheaper supported Claude model.
+- No OpenAI connector was listed by the connected-integration check. Previously provisioned platform AI secret entries may still exist; they are unused, not falsely reported deleted. The available integration tools do not expose a disconnect action; if an old connection is shown in the project, remove it using Connectors → Manage. Do not remove unrelated account secrets.
+- Missing Anthropic credentials, HTTP failure, timeout, truncated/invalid model JSON or invalid helper contracts fail closed into the existing approved error/empty copy. No provider fallback or canned runtime gift data exists. No Qloo key was requested; its adapter remains optional/later.
+
+### Pipeline and safety
+
+1. Free Wikipedia MediaWiki API supplies up to four ranked, real article matches in the existing “Did you mean” UI. Confirmed chip-to-entity pairs now reach generation explicitly; an unconfirmed exact article title may resolve automatically, while ambiguous alternatives are not guessed. Refusal chips no longer run cultural-entity searches.
+2. A helper call turns resolved loves into structured specifics, eras, subgenres, adjacent artists/makers, aesthetics, signature objects and places, retaining exact source-love identity. Generation and critic receive this expanded profile, not a top-level raw-chip list.
+3. A helper call expands only previously uncached refusals into related terms. Code unions these with original refusals and fixed aliases, including pink shades and Microsoft's product family/Office. Existing terms are not regenerated when one refusal is added.
+4. Main Claude proposes about twelve candidates (normally two per missing kind). Code validates structured fields, budget, previous titles, ownership, original/expanded hard no's, substantive idea detail, context and source evidence before critique.
+5. A separate helper critic scores specificity, genuine love/context combination, plausible budget, novelty/duplicates and kind fit. Code enforces thresholds (3/5 specificity/combination/novelty, 4/5 budget/kind), rejects critic failures and selects the highest-scored eligible candidate per kind.
+6. Up to three generation/critic pairs repair missing kinds with precise deterministic/critic failures, matched forbidden terms and excluded titles. Only a full six-kind set is returned; exhausting repairs never pads an unsafe or partial set. This is the safety interpretation of “six always pass,” not an impossible guarantee during provider failure.
+7. Rejection titles/reasons, owned items, accumulated device-local More like this seeds and prior titles reach both generation and critique. Hard no's always override positive seeds.
+
+Taste expansions use bounded six-hour in-memory caches keyed by profile identity, loves/confirmed matches and helper model. Refusals have separate per-normalized-term/helper-model caches; failed promises are evicted. Wikipedia results cache for 24 hours. Restart clears all caches; no database or durable server recipient storage was added. Browser recipients/keepers remain unchanged, and completion-page storage isolation also covers the new seed key.
+
+### Call budget and regression commands
+
+- Typical cold search with uncached refusals: **4 Claude calls** = expansion + refusal expansion + generation + critic.
+- Fully warm search: **2 Claude calls** = generation + critic. A cold profile without refusals normally uses 3.
+- Each repair adds up to 2 calls; three pairs cap a cold search at **8** and a warm search at **6**. No eligible candidates means the empty critic call is skipped. Explicit API failures are not silently retried.
+- Wikipedia typeahead: **0 Claude calls**. Actual successful search counts, stages, cache status and model names appear in the API's `diagnostics`; no credential or prompt is included.
+- `pnpm test:gifts` runs deterministic contract/profile tests. It also runs before every API build. Fixtures are deliberately simulated test transports, never runtime substitutions or semantic/model-quality evidence.
+- `pnpm test:gifts:live` performs real fixed-profile calls, writes the marked table below and fails on missing keys, missing fixtures or incomplete rounds. Run both commands after subsequent changes; never present a blocked live run as a pass.
+- Fixed profiles: original Hinterwelle loves/no's (synthetic test budget $15–$90, Friend/Birthday, ownership of every Joy Division record); **Wolfboy awaiting the Director's actual parameters**; fictional Mira (easy: birdwatching/lemon baking/ceramics/botanical gardens); fictional Sol (sparse: sourdough baking/astronomy). Full fixture constraints are in source.
+
+### Verification and boundaries
+
+- Latest deterministic run: **27 passed, 0 failed, 1 skipped** (Wolfboy parameters pending). Workspace TypeScript checks and production Vite build passed; both workflows start cleanly.
+- Real HTTP checks: Wikipedia taste lookup returned Okkervil River as `band` and Okkervil as `river` with HTTP 200. A keyless gift request returned HTTP 503 and the existing “Lost the signal. Check your connection and try again.” copy, with no alternate-provider generation.
+- Deterministic tests cover three defined fixed profiles, best-of-two selection per kind, four-to-two call cache reuse, profile invalidation, only-new-refusal expansion, forbidden-candidate replacement with exact repair feedback, critic failure/duplicate gating, feedback forwarding, failed-cache eviction, invented-source rejection, direct Anthropic-only transport and missing-key/no-fallback behavior.
+- Wikipedia's real anonymous API returned both Okkervil River (band) and Okkervil (river). A regression test now preserves search ranking and classifies the definition rather than mistakenly matching “River” inside the band's proper name.
+- Live Claude samples for Hinterwelle/Wolfboy cannot be supplied until a key is available and Wolfboy's profile is specified. The table below records the actual blocked status and zero calls.
+- All eight share-card art slots and the share-card renderer remain untouched. No new interface copy was invented.
+
+<!-- CLAUDE_PROFILE_EVAL -->
+### Fixed-profile live evaluation — 2026-10-31T03:23:56.110Z
+
+Model: `claude-sonnet-5-5`; helper: `claude-sonnet-5-5`.
+
+| Profile | Live result | Claude calls | Accepted kinds |
+| --- | --- | ---: | --- |
+| Hinterwelle | BLOCKED: ANTHROPIC_API_KEY missing | 0 | — |
+| Wolfboy | BLOCKED: Director profile details pending | 0 | — |
+| Mira (easy) | BLOCKED: ANTHROPIC_API_KEY missing | 0 | — |
+| Sol (sparse: two loves) | BLOCKED: ANTHROPIC_API_KEY missing | 0 | — |
+
+
+No simulated output is counted as a live run. Deterministic transport fixtures are a separate contract test, not a semantic-quality evaluation.
+<!-- /CLAUDE_PROFILE_EVAL -->

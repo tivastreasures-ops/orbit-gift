@@ -14,3 +14,9 @@ Use only explicit validated source names or exact legacy source matches for cons
 **Why:** The Director explicitly says to use the fallback chip and never invent a connection. The universe is meant to represent this person's actual preferences, not inferred tastes.
 
 **How to apply:** Preserve this boundary across new gift APIs, browser-data compatibility, saving/deleting and recipient switching. Interactive stars and hard-no belts remain private/device-local.
+
+Run the fixed Hinterwelle, Wolfboy, easy and two-love sparse profile checks after every change, recording results in BUILD.md.
+
+**Why:** The Director explicitly requires this regression discipline.
+
+**How to apply:** Distinguish deterministic transport tests from real Claude quality runs. Missing credentials or unspecified profile details are blocked, not passes; do not invent the Director's test-profile tastes.

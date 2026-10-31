@@ -92,12 +92,25 @@ components:
           type: array
           maxItems: 30
           items: { type: string, maxLength: 200 }
+        matchedLoves:
+          type: array
+          maxItems: 30
+          items:
+            type: object
+            required: [love, entityId]
+            properties:
+              love: { type: string, maxLength: 200 }
+              entityId: { type: string, maxLength: 200 }
         owned: { type: string, maxLength: 2000 }
         occasion: { type: string, maxLength: 100 }
         relationship: { type: string, maxLength: 100 }
         budgetMin: { type: number, minimum: 0, maximum: 100000 }
         budgetMax: { type: number, minimum: 0, maximum: 100000 }
         moreLike: { type: string, maxLength: 300 }
+        moreLikeSeeds:
+          type: array
+          maxItems: 30
+          items: { type: string, maxLength: 300 }
         rejected:
           type: array
           maxItems: 200
@@ -153,6 +166,19 @@ components:
           items: { $ref: "#/components/schemas/GiftIdea" }
         fallback: { type: boolean }
         filteredCount: { type: integer }
+        diagnostics:
+          type: object
+          required: [claudeCalls, expansionCalls, refusalCalls, generationCalls, criticCalls, rounds, profileCacheHit, model, helperModel]
+          properties:
+            claudeCalls: { type: integer }
+            expansionCalls: { type: integer }
+            refusalCalls: { type: integer }
+            generationCalls: { type: integer }
+            criticCalls: { type: integer }
+            rounds: { type: integer }
+            profileCacheHit: { type: boolean }
+            model: { type: string }
+            helperModel: { type: string }
     HealthStatus:
       type: object
       properties:

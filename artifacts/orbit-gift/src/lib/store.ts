@@ -37,6 +37,7 @@ interface State {
   chips: TasteChip[];
   gifts: GiftIdea[];
   rounds: Record<string, string[]>;
+  seeds: Record<string, string[]>;
   settings: Settings;
   storageBlocked: boolean;
   backup: 'none' | 'showing' | 'done';
@@ -47,6 +48,7 @@ const K = {
   c: 'ow.chips',
   g: 'ow.gifts',
   rd: 'ow.rounds',
+  seeds: 'ow.seeds',
   s: 'ow.settings',
   p: 'ow.sharePurpose',
 };
@@ -103,6 +105,7 @@ function get(): State {
       chips: readKey<TasteChip[]>(K.c, []),
       gifts: readKey<GiftIdea[]>(K.g, []),
       rounds: readKey<Record<string, string[]>>(K.rd, {}),
+      seeds: readKey<Record<string, string[]>>(K.seeds, {}),
       settings: { ...DEFAULT_SETTINGS, ...readKey<Partial<Settings>>(K.s, {}) },
       storageBlocked: !ok || blocked,
       backup: 'none',
@@ -122,6 +125,7 @@ function set(patch: Partial<State>) {
   if (patch.chips) writeKey(K.c, next.chips);
   if (patch.gifts) writeKey(K.g, next.gifts);
   if (patch.rounds) writeKey(K.rd, next.rounds);
+  if (patch.seeds) writeKey(K.seeds, next.seeds);
   if (patch.settings) writeKey(K.s, next.settings);
   state = { ...next, storageBlocked: next.storageBlocked || blocked };
   listeners.forEach((l) => l());
@@ -140,6 +144,11 @@ export const uid = () => {
 };
 
 export const actions = {
+  addSeed(rid: string, title: string): string[] {
+    const seeds = [...new Set([...(get().seeds[rid] ?? []), title.slice(0, 300)])].slice(-30);
+    set({ seeds: { ...get().seeds, [rid]: seeds } });
+    return seeds;
+  },
   addRecipient(r: Omit<Recipient, 'id'>): string {
     const id = uid();
     set({ recipients: [...get().recipients, { ...r, id }] });
