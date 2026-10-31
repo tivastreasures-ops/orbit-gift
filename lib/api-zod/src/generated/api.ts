@@ -112,6 +112,7 @@ export const GenerateGiftsBody = zod.object({
   "previousTitles": zod.array(zod.string().max(generateGiftsBodyPreviousTitlesItemMax)).max(generateGiftsBodyPreviousTitlesMax).optional()
 })
 
+export const generateGiftsResponseIdeasItemSourceLovesMin = 0;
 export const generateGiftsResponseIdeasItemSourceLovesMax = 2;
 
 
@@ -124,7 +125,7 @@ export const GenerateGiftsResponse = zod.object({
   "priceRange": zod.string(),
   "whereToLook": zod.string(),
   "because": zod.string(),
-  "sourceLoves": zod.array(zod.string()).min(1).max(generateGiftsResponseIdeasItemSourceLovesMax).optional().describe('Exact supplied love strings validated by the server; optional for older locally saved ideas.'),
+  "sourceLoves": zod.array(zod.string()).min(generateGiftsResponseIdeasItemSourceLovesMin).max(generateGiftsResponseIdeasItemSourceLovesMax).optional().describe('Exact supplied love strings validated by the server; empty means whole-sky fallback, optional for older locally saved ideas.'),
   "kind": zod.enum(['object', 'experience', 'consumable', 'maker', 'collectible', 'wildcard']).optional(),
   "passedRules": zod.array(zod.string()),
   "status": zod.enum(['shown', 'saved', 'rejected']),

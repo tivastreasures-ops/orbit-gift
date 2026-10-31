@@ -13,7 +13,7 @@ The Director approved and supplied the eight final share-card backgrounds (four 
 
 **Why:** The user explicitly approved this set and asked for integration; this supersedes the earlier hold on blank art slots.
 
-**How to apply:** Follow the supplied slot geometry/default copy and clip fitted text to its box. Square exports contain the whole portrait on the starry background. New art still needs explicit Director approval; hard-no colours select neutral and cannot be recoloured away.
+**How to apply:** Keep approved PNG bytes unchanged. The Director's later layout changes supersede the original slot geometry: remove card budgets and Because notes, retain fitted/clipped text, and reserve a personal-sky corner and link/QR strip. Square exports contain the whole portrait on the starry background. New art still needs explicit Director approval; hard-no colours select neutral and cannot be recoloured away.
 
 Do not restore a printed name or name-entry control without an approved name slot.
 
@@ -32,3 +32,21 @@ All app AI calls must use the direct Anthropic API, not Replit AI Integrations o
 **Why:** The Director explicitly rejects Replit AI Integrations/OpenAI for this product.
 
 **How to apply:** Keep credentials server-only; check Anthropic's current documentation when changing the Sonnet default. A cheaper helper may still be Claude. Qloo remains optional/later, not a required key or substitute AI provider.
+
+Share-card budgets are removed, not merely hidden; the gift-search budget remains separate. All I Want has four one-line wishes and no Because fields.
+
+**Why:** The Director said budget “doesnt make sence if someone is filling it out for someone else.”
+
+**How to apply:** Do not restore budget fields/slots in stationery. Excess wishes are dropped with a UI-only note, never printed on the card.
+
+The Librarian supplies replacement POP/Neutral backgrounds and transparent base-world PNGs by hand. Until approved uploads arrive, keep existing card PNGs and code-drawn world placeholders.
+
+**Why:** The Director prohibits generated or edited card art and wants live, person-specific constellations rather than regenerated images.
+
+**How to apply:** Keep layout shared by POP/Neutral, support painted-title suppression, and preserve the same name/loves-seeded pattern across Results, Keepers and miniatures. Published links only on cards; when no published domain exists, show the brand alone and no QR.
+
+Unfinished answers must survive failures/reloads, including the public fill-in form, but blank completion links must never prefill from giver profiles or another tab's response.
+
+**Why:** The Director requires no lost answers while the no-account sharing design keeps giver data private and completion cards blank for new responders.
+
+**How to apply:** Keep profile/share drafts device-local and public completion drafts tab-isolated; never put personal answers into a completion URL.

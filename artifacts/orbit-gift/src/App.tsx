@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -13,6 +13,8 @@ import RefusalsPage from '@/pages/refusals';
 import ResultsPage from '@/pages/results';
 import SharePage from '@/pages/share';
 import CompletePage from '@/pages/complete';
+
+const CardsCalibration = import.meta.env.DEV ? lazy(() => import('@/pages/dev/cards-calibration')) : null;
 
 const queryClient = new QueryClient();
 
@@ -41,6 +43,11 @@ function Router() {
           <Route path="/recipient/:id/refusals" component={RefusalsPage} />
           <Route path="/recipient/:id/results" component={ResultsPage} />
           <Route path="/share" component={SharePage} />
+          {CardsCalibration && (
+            <Route path="/dev/cards">
+              <Suspense fallback={null}><CardsCalibration /></Suspense>
+            </Route>
+          )}
           <Route component={NotFound} />
         </Switch>
       </RoutedErrorBoundary>

@@ -1,13 +1,50 @@
 import { useState } from 'react';
+import type { TasteEntity } from '@workspace/api-client-react';
 import { X, Check } from 'lucide-react';
 import { useSearchTaste } from '@workspace/api-client-react';
 import { COPY } from '@/lib/copy';
-import { actions, useData, type TasteChip } from '@/lib/store';
+import { actions, useData, useDraft, type TasteChip } from '@/lib/store';
+
+const COLORS = ['red', 'pink', 'orange', 'yellow', 'green', 'blue', 'purple', 'violet', 'indigo', 'teal', 'turquoise', 'navy', 'black', 'white', 'grey', 'gray', 'brown', 'beige', 'gold', 'silver', 'cream', 'lilac', 'lavender', 'mint', 'coral', 'peach', 'maroon', 'burgundy', 'magenta', 'cyan', 'olive', 'mustard', 'sage', 'rust', 'tan', 'ivory', 'charcoal', 'blush', 'rose', 'emerald', 'scarlet', 'crimson', 'aqua', 'plum'];
+const COLOR_RE = new RegExp(`^(?:the\\s+)?(?:(?:colou?r)\\s+(${COLORS.join('|')})|(${COLORS.join('|')})(?:\\s+colou?r(?:ed)?)?)$`, 'i');
+
+/** A colour word on its own or written as "color pink" / "pink color". Returns the colour or null. */
+export function colorWord(text: string): string | null {
+  const m = text.trim().replace(/[.!]+$/, '').match(COLOR_RE);
+  return m ? (m[1] || m[2]).toLowerCase() : null;
+}
+/** Explicitly a colour: never needs a "which did you mean" question. */
+export function isExplicitColor(text: string): boolean {
+  return colorWord(text) !== null;
+}
+
+const KIND_WORDS: [RegExp, string][] = [
+  [/music|musician|singer|artist|rapper|dj/i, 'the musician'],
+  [/band|group/i, 'the band'],
+  [/film|movie/i, 'the movie'],
+  [/tv|show|series/i, 'the show'],
+  [/book|novel|author|writer/i, 'the book'],
+  [/game/i, 'the game'],
+  [/brand|company|store|shop/i, 'the brand'],
+  [/sport|team/i, 'the team'],
+  [/place|city|country|location/i, 'the place'],
+  [/food|dish|drink|cuisine/i, 'the food'],
+  [/character/i, 'the character'],
+  [/athlete|actor|actress|person|celebrity/i, 'the person'],
+  [/colou?r/i, 'the color'],
+];
+/** Human-language label for a candidate. Never exposes internal kind placeholders like "entity". */
+export function candidateLabel(c: TasteEntity): string {
+  const kind = (c.kind || '').trim();
+  if (/colou?r/i.test(kind)) return COPY.love.theColor(c.name.toLowerCase());
+  const hit = KIND_WORDS.find(([re]) => re.test(kind));
+  return hit ? `${c.name}, ${hit[1]}` : c.name;
+}
 
 export function ChipEditor({ recipientId, type, placeholder }: { recipientId: string; type: 'love' | 'refuse'; placeholder: string }) {
   const { chips } = useData();
   const mine = chips.filter((c) => c.recipientId === recipientId && c.type === type);
-  const [value, setValue] = useState('');
+  const [value, setValue, clearValue] = useDraft<string>(`chip.${recipientId}.${type}`, '');
   const [error, setError] = useState<string | null>(null);
   const search = useSearchTaste();
 
@@ -15,13 +52,19 @@ export function ChipEditor({ recipientId, type, placeholder }: { recipientId: st
     const text = value.trim().slice(0, 200);
     if (!text) return;
     setError(null);
-    setValue('');
+    clearValue();
     const id = actions.addChip({ recipientId, text, type, kind: '', status: 'pending' });
     if (type === 'refuse') { actions.updateChip(id, { status: 'plain' }); return; }
+    // Clear colours ("color pink", "pink color") never ask.
+    if (isExplicitColor(text)) { actions.updateChip(id, { status: 'plain', kind: 'color' }); return; }
     try {
       const res = await search.mutateAsync({ data: { text } });
       if (res.fallback) actions.flagBackup();
-      if (res.matches.length) actions.updateChip(id, { status: 'confirm', candidates: res.matches, candidateIndex: 0 });
+      const color = colorWord(text);
+      const others = res.matches.filter((m) => !/colou?r/i.test(m.kind || ''));
+      // A plain colour word only asks when something else genuinely shares the name.
+      if ((color && others.length === 0) || (res.matches.length === 1 && res.matches[0].kind === 'color')) actions.updateChip(id, { status: 'plain', kind: 'color' });
+      else if (res.matches.length) actions.updateChip(id, { status: 'confirm', candidates: res.matches, candidateIndex: 0 });
       else actions.updateChip(id, { status: 'nomatch' });
     } catch {
       actions.updateChip(id, { status: 'nomatch' });
@@ -58,7 +101,6 @@ export function ChipEditor({ recipientId, type, placeholder }: { recipientId: st
 }
 
 function ChipRow({ chip, index }: { chip: TasteChip; index: number }) {
-  const cand = chip.candidates?.[chip.candidateIndex ?? 0];
   const refuse = chip.type === 'refuse';
   return (
     <li
@@ -91,38 +133,34 @@ function ChipRow({ chip, index }: { chip: TasteChip; index: number }) {
           <X className="w-4 h-4" />
         </button>
       </div>
-      {chip.status === 'confirm' && cand && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 pl-5">
-          <span className="text-sm text-muted-foreground mr-1" data-testid={`text-match-${chip.id}`}>
-            {COPY.love.match(cand.kind ? `${cand.name} (${cand.kind})` : cand.name)}
-          </span>
-          <button
-            type="button"
-            className="btn btn-gold btn-sm"
-            onClick={() => actions.updateChip(chip.id, { status: 'confirmed', matchedEntityId: cand.id, matchedName: cand.name, kind: cand.kind })}
-            data-testid={`button-match-yes-${chip.id}`}
-          >
-            {COPY.love.yes}
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => {
-              const next = (chip.candidateIndex ?? 0) + 1;
-              if (chip.candidates && next < chip.candidates.length) actions.updateChip(chip.id, { candidateIndex: next });
-              else actions.updateChip(chip.id, { status: 'nomatch', matchedEntityId: undefined, matchedName: undefined, kind: '' });
-            }}
-            data-testid={`button-match-nope-${chip.id}`}
-          >
-            {COPY.love.nope}
-          </button>
-        </div>
-      )}
+      {chip.status === 'confirm' && chip.candidates && chip.candidates.length > 0 && <WhichOne chip={chip} />}
       {chip.status === 'nomatch' && (
         <p className="mt-2 pl-5 text-sm text-muted-foreground" data-testid={`text-nomatch-${chip.id}`}>
           {COPY.love.noMatch}
         </p>
       )}
     </li>
+  );
+}
+
+function WhichOne({ chip }: { chip: TasteChip }) {
+  const color = colorWord(chip.text);
+  const cands = (chip.candidates ?? []).filter((c) => !/colou?r/i.test(c.kind || ''));
+  const options: { key: string; label: string; pick: () => void }[] = [];
+  if (color) options.push({ key: 'color', label: COPY.love.theColor(color), pick: () => actions.updateChip(chip.id, { status: 'plain', kind: 'color', matchedEntityId: undefined, matchedName: undefined }) });
+  cands.slice(0, 4).forEach((c) => options.push({ key: c.id, label: candidateLabel(c), pick: () => actions.updateChip(chip.id, { status: 'confirmed', matchedEntityId: c.id, matchedName: c.name, kind: c.kind }) }));
+  options.push({ key: 'else', label: COPY.love.somethingElse, pick: () => actions.updateChip(chip.id, { status: 'nomatch', matchedEntityId: undefined, matchedName: undefined, kind: '' }) });
+  const qid = `which-${chip.id}`;
+  return (
+    <div className="mt-3 pl-5" role="group" aria-labelledby={qid}>
+      <p id={qid} className="text-sm text-muted-foreground mb-2" data-testid={`text-match-${chip.id}`}>{COPY.love.which(chip.text)}</p>
+      <div className="flex flex-wrap gap-2">
+        {options.map((o, i) => (
+          <button key={o.key} type="button" className={i === 0 ? 'btn btn-gold btn-sm' : 'btn btn-ghost btn-sm'} onClick={o.pick} data-testid={`button-which-${chip.id}-${o.key === 'color' || o.key === 'else' ? o.key : i}`}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

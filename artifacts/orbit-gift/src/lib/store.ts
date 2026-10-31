@@ -1,5 +1,6 @@
-import { useSyncExternalStore } from 'react';
-import type { GiftIdea, TasteEntity } from '@workspace/api-client-react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
+import type { GiftIdea, GiftInput, TasteEntity } from '@workspace/api-client-react';
+import type { WorldId } from './sky';
 import { COPY } from './copy';
 
 export interface Recipient {
@@ -32,6 +33,15 @@ export interface Settings {
   reduceMotion: boolean;
 }
 
+/** A recommendation request saved before it is sent; kept on every failure until success. */
+export interface PendingRequest {
+  body: GiftInput;
+  key: string;
+  moreLike?: string;
+  at: number;
+  failed?: boolean;
+}
+
 interface State {
   recipients: Recipient[];
   chips: TasteChip[];
@@ -39,6 +49,8 @@ interface State {
   rounds: Record<string, string[]>;
   seeds: Record<string, string[]>;
   settings: Settings;
+  worlds: Record<string, WorldId>;
+  pending: Record<string, PendingRequest>;
   storageBlocked: boolean;
   backup: 'none' | 'showing' | 'done';
 }
@@ -51,6 +63,8 @@ const K = {
   seeds: 'ow.seeds',
   s: 'ow.settings',
   p: 'ow.sharePurpose',
+  w: 'ow.worlds',
+  pend: 'ow.pendingRequests',
 };
 export const SHARE_PURPOSE_KEY = K.p;
 
@@ -106,6 +120,8 @@ function get(): State {
       gifts: readKey<GiftIdea[]>(K.g, []),
       rounds: readKey<Record<string, string[]>>(K.rd, {}),
       seeds: readKey<Record<string, string[]>>(K.seeds, {}),
+      worlds: readKey<Record<string, WorldId>>(K.w, {}),
+      pending: readKey<Record<string, PendingRequest>>(K.pend, {}),
       settings: { ...DEFAULT_SETTINGS, ...readKey<Partial<Settings>>(K.s, {}) },
       storageBlocked: !ok || blocked,
       backup: 'none',
@@ -126,6 +142,8 @@ function set(patch: Partial<State>) {
   if (patch.gifts) writeKey(K.g, next.gifts);
   if (patch.rounds) writeKey(K.rd, next.rounds);
   if (patch.seeds) writeKey(K.seeds, next.seeds);
+  if (patch.worlds) writeKey(K.w, next.worlds);
+  if (patch.pending) writeKey(K.pend, next.pending);
   if (patch.settings) writeKey(K.s, next.settings);
   state = { ...next, storageBlocked: next.storageBlocked || blocked };
   listeners.forEach((l) => l());
@@ -184,6 +202,24 @@ export const actions = {
   deleteGift(id: string) {
     set({ gifts: get().gifts.filter((g) => g.id !== id) });
   },
+  setWorld(rid: string, w: WorldId | null) {
+    const worlds = { ...get().worlds };
+    if (w) worlds[rid] = w;
+    else delete worlds[rid];
+    set({ worlds });
+  },
+  savePending(rid: string, p: PendingRequest) {
+    set({ pending: { ...get().pending, [rid]: p } });
+  },
+  markPendingFailed(rid: string) {
+    const cur = get().pending[rid];
+    if (cur) set({ pending: { ...get().pending, [rid]: { ...cur, failed: true } } });
+  },
+  clearPending(rid: string) {
+    const pending = { ...get().pending };
+    delete pending[rid];
+    set({ pending });
+  },
   updateSettings(patch: Partial<Settings>) {
     set({ settings: { ...get().settings, ...patch } });
   },
@@ -199,4 +235,23 @@ export function splitList(text: string): string[] {
     .split(/[\n,;]+/)
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+/** Unsent input drafts survive reloads and failures (localStorage, per key). */
+export function useDraft<T>(key: string, initial: T): [T, (v: T | ((p: T) => T)) => void, () => void] {
+  const full = `ow.draft.${key}`;
+  const [val, setVal] = useState<T>(() => readKey<T>(full, initial));
+  const update = useCallback((v: T | ((p: T) => T)) => {
+    setVal((prev) => {
+      const next = typeof v === 'function' ? (v as (p: T) => T)(prev) : v;
+      writeKey(full, next);
+      return next;
+    });
+  }, [full]);
+  const clear = useCallback(() => {
+    setVal(initial);
+    if (!storageOff) try { window.localStorage.removeItem(full); } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [full]);
+  return [val, update, clear];
 }

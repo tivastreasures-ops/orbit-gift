@@ -9,11 +9,11 @@ export const candidateSchema = z.object({
   priceMin: z.number().nonnegative(), priceMax: z.number().nonnegative(),
   whereToLook: z.string().min(1).max(300), kind: z.enum(KINDS),
   sourceLoves: z.array(z.string().min(1)).max(2),
-  sourceDetails: z.array(z.object({ love: z.string(), detail: z.string() })).max(2),
+  sourceDetails: z.array(z.object({ love: z.string(), detail: z.string() }).strict()).max(2),
   contextType: z.enum(["occasion", "relationship", "none"]),
   contextValue: z.string(), contextDetail: z.string(),
   maker: z.string().max(150), namedItem: z.string().max(200), handmade: z.boolean(),
-});
+}).strict();
 export type QualityCandidate = z.infer<typeof candidateSchema>;
 
 // This is the ONLY keyword-based quality exclusion: the Director's explicit

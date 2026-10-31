@@ -6,7 +6,7 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:gifts": "tsx --test ../artifacts/api-server/src/lib/quality.test.ts ../artifacts/api-server/src/lib/pipeline.test.ts ../artifacts/orbit-gift/src/lib/universe.test.ts",
+    "test:gifts": "tsx --test ../artifacts/api-server/src/lib/quality.test.ts ../artifacts/api-server/src/lib/pipeline.test.ts ../artifacts/api-server/src/lib/tool-contracts.test.ts ../artifacts/api-server/src/lib/recommendation-jobs.test.ts ../artifacts/orbit-gift/src/lib/universe.test.ts",
     "gifts:live": "tsx ../artifacts/api-server/src/lib/gift-eval.ts",
     "test:card-art": "tsx src/card-art-qa.ts"
   },

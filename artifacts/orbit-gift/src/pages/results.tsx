@@ -1,17 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams, useSearch } from 'wouter';
 import { Heart, X, Sparkles, RotateCcw } from 'lucide-react';
-import { useGenerateGifts, type GiftIdea } from '@workspace/api-client-react';
-import { SkyLegend, SkyMap, SourceChip, isChildControl, type SkySelection } from '@/components/sky-map';
+import { useGenerateGifts, type GiftIdea, type GiftInput } from '@workspace/api-client-react';
+import { SkyLegend, SkyMap, SourceChip, WorldPicker, isChildControl, type SkySelection } from '@/components/sky-map';
+import { sendGifts } from '@/lib/gen-request';
+import { chooseWorld } from '@/lib/sky';
 import { resolveSources, type ResolvedSources } from '@/lib/sources';
 import { MissingRecipient } from '@/components/flow-header';
 import { COPY, NEED } from '@/lib/copy';
-import { actions, useData } from '@/lib/store';
-
-function errorText(e: unknown) {
-  if ((typeof navigator !== 'undefined' && !navigator.onLine) || e instanceof TypeError) return COPY.errors.offline;
-  return COPY.errors.broke;
-}
+import { actions, uid, useData } from '@/lib/store';
 
 function LoadingSky({ more }: { more: boolean }) {
   return (
@@ -112,54 +109,76 @@ export default function ResultsPage() {
   const { id } = useParams<{ id: string }>();
   const search = useSearch();
   const [, setLocation] = useLocation();
-  const { recipients, chips, gifts, rounds, settings, seeds } = useData();
+  const { recipients, chips, gifts, rounds, settings, seeds, pending, worlds } = useData();
   const r = recipients.find((x) => x.id === id);
-  const gen = useGenerateGifts();
+  const keyRef = useRef('');
+  // Real generated hook; request carries the 130s timeout, Idempotency-Key and one transient retry.
+  const gen = useGenerateGifts({ mutation: { mutationFn: ({ data }) => sendGifts(data, keyRef.current) } });
   const [phase, setPhase] = useState<'idle' | 'loading' | 'more'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [sel, setSel] = useState<SkySelection | null>(null);
   const [departing, setDeparting] = useState<string[]>([]);
-  const [lastMore, setLastMore] = useState<string | undefined>(undefined);
   const started = useRef(false);
   const prevStatus = useRef<Record<string, string>>({});
 
-  const run = async (moreLike?: string) => {
+  const buildBody = (moreLike?: string): GiftInput | null => {
     const rec = recipients.find((x) => x.id === id);
-    if (!rec) return;
-    setError(null);
-    setLastMore(moreLike);
-    setPhase(moreLike ? 'more' : 'loading');
+    if (!rec) return null;
     const mine = chips.filter((c) => c.recipientId === rec.id);
     const all = gifts.filter((g) => g.recipientId === rec.id);
     const moreLikeSeeds = moreLike ? actions.addSeed(rec.id, moreLike) : (seeds[rec.id] ?? []);
+    return {
+      recipientId: rec.id,
+      loves: mine.filter((c) => c.type === 'love').map((c) => c.text).slice(0, 30),
+      refusals: mine.filter((c) => c.type === 'refuse').map((c) => c.text).slice(0, 30),
+      entityIds: mine.filter((c) => c.type === 'love' && c.matchedEntityId).map((c) => c.matchedEntityId as string).slice(0, 30),
+      matchedLoves: mine.filter((c) => c.type === 'love' && c.status === 'confirmed' && c.matchedEntityId).map((c) => ({ love: c.text, entityId: c.matchedEntityId! })).slice(0, 30),
+      owned: rec.owned ? rec.owned.slice(0, 2000) : undefined,
+      occasion: rec.occasion || undefined,
+      relationship: rec.relationship || undefined,
+      budgetMin: rec.budgetMin,
+      budgetMax: rec.budgetMax,
+      moreLike: moreLike?.slice(0, 300),
+      moreLikeSeeds,
+      rejected: all.filter((g) => g.status === 'rejected').map((g) => ({ title: g.title.slice(0, 300), reason: (g.rejectReason ?? '').slice(0, 100) })).slice(-200),
+      previousTitles: all.map((g) => g.title.slice(0, 300)).slice(-200),
+    };
+  };
+
+  /** Sends a saved request. Inputs, gifts and rounds are untouched until a successful response. */
+  const send = async (rid: string, body: GiftInput, key: string, moreLike?: string) => {
+    // Persist BEFORE the request so a failure or reload never loses it.
+    actions.savePending(rid, { body, key, moreLike, at: Date.now() });
+    keyRef.current = key;
+    setError(null);
+    setPhase(moreLike ? 'more' : 'loading');
     try {
-      const res = await gen.mutateAsync({
-        data: {
-          recipientId: rec.id,
-          loves: mine.filter((c) => c.type === 'love').map((c) => c.text).slice(0, 30),
-          refusals: mine.filter((c) => c.type === 'refuse').map((c) => c.text).slice(0, 30),
-          entityIds: mine.filter((c) => c.type === 'love' && c.matchedEntityId).map((c) => c.matchedEntityId as string).slice(0, 30),
-          matchedLoves: mine.filter(c => c.type === 'love' && c.status === 'confirmed' && c.matchedEntityId).map(c => ({ love: c.text, entityId: c.matchedEntityId! })).slice(0, 30),
-          owned: rec.owned ? rec.owned.slice(0, 2000) : undefined,
-          occasion: rec.occasion || undefined,
-          relationship: rec.relationship || undefined,
-          budgetMin: rec.budgetMin,
-          budgetMax: rec.budgetMax,
-          moreLike: moreLike?.slice(0, 300),
-          moreLikeSeeds,
-          rejected: all.filter((g) => g.status === 'rejected').map((g) => ({ title: g.title.slice(0, 300), reason: (g.rejectReason ?? '').slice(0, 100) })).slice(-200),
-          previousTitles: all.map((g) => g.title.slice(0, 300)).slice(-200),
-        },
-      });
+      const res = await gen.mutateAsync({ data: body });
       if (res.fallback) actions.flagBackup();
       setSel(null);
-      actions.addRound(rec.id, res.ideas);
+      actions.addRound(rid, res.ideas);
+      actions.clearPending(rid);
       setDeparting([]);
-    } catch (e) {
-      setError(errorText(e));
+    } catch {
+      actions.markPendingFailed(rid);
+      setError(COPY.errors.stars);
     } finally {
       setPhase('idle');
     }
+  };
+
+  const run = (moreLike?: string) => {
+    const body = buildBody(moreLike);
+    if (!body || !r) return;
+    void send(r.id, body, uid(), moreLike);
+  };
+
+  /** Reattach the same job; the server evicts genuine failures for safe retries. */
+  const retry = () => {
+    if (!r) return;
+    const p = pending[r.id];
+    if (p) void send(r.id, p.body, p.key, p.moreLike);
+    else run();
   };
 
   useEffect(() => {
@@ -167,7 +186,14 @@ export default function ResultsPage() {
     started.current = true;
     const fresh = new URLSearchParams(search).get('fresh') === '1';
     if (fresh) setLocation(`/recipient/${r.id}/results`, { replace: true });
-    if (fresh || !rounds[r.id]?.length) void run();
+    const p = pending[r.id];
+    if (!fresh && p) {
+      // Interrupted mid-flight: resume with the same key (server shares the in-flight job).
+      if (!p.failed) void send(r.id, p.body, p.key, p.moreLike);
+      else setError(COPY.errors.stars);
+      return;
+    }
+    if (fresh || !rounds[r.id]?.length) run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [r]);
 
@@ -199,6 +225,16 @@ export default function ResultsPage() {
   roundIdeas.forEach((g) => srcOf.get(g.id)?.ids.forEach((lid) => counts.set(lid, (counts.get(lid) ?? 0) + 1)));
   const goldIds = new Set<string>();
   gifts.filter((g) => g.recipientId === r.id && g.status === 'saved').forEach((g) => resolveSources(g, loveList)?.ids.forEach((lid) => goldIds.add(lid)));
+  const mineAll = gifts.filter((g) => g.recipientId === r.id);
+  const seedSet = new Set((seeds[r.id] ?? []).map((t) => t.toLowerCase()));
+  const brightIds = new Set<string>();
+  const knockedIds = new Set<string>();
+  mineAll.forEach((g) => {
+    const ids = resolveSources(g, loveList)?.ids ?? [];
+    if (g.status === 'rejected') ids.forEach((x) => knockedIds.add(x));
+    else if (seedSet.has(g.title.slice(0, 300).toLowerCase())) ids.forEach((x) => brightIds.add(x));
+  });
+  const autoWorld = chooseWorld(loveList.map((l) => l.text), r.name);
   const toggle = (g: GiftIdea) => {
     const s = srcOf.get(g.id);
     if (!s) return;
@@ -218,8 +254,8 @@ export default function ResultsPage() {
         <LoadingSky more={false} />
       ) : error ? (
         <div className="glass rounded-3xl mt-8 p-8 text-center" role="alert" data-testid="status-error">
-          <p className="font-display text-2xl">{error}</p>
-          <button type="button" className="btn btn-gold mt-6" onClick={() => void run(lastMore)} data-testid="button-retry">
+          <p className="font-display text-2xl" data-testid="text-error">{error}</p>
+          <button type="button" className="btn btn-gold mt-6" onClick={retry} data-testid="button-retry">
             <RotateCcw className="w-4 h-4" />
             <span className="copy-needed !text-current">{NEED('retry button label')}</span>
           </button>
@@ -239,19 +275,30 @@ export default function ResultsPage() {
       ) : (
         <>
           <header className="mt-6">
-            <p className="text-sm text-violet mb-2">{COPY.sky.constellation(r.name)}</p>
-            <SkyMap
-              key={roundIds.join('|')}
-              loves={loveList}
-              refusals={refusalList}
-              gifts={roundIdeas.map((g) => ({ id: g.id, sourceIds: srcOf.get(g.id)?.ids ?? [], saved: g.status === 'saved' }))}
-              goldIds={goldIds}
-              counts={counts}
-              selected={sel}
-              label={COPY.sky.constellation(r.name)}
-              className="w-full max-w-xl"
-            />
-            <SkyLegend showNo={refusalList.length > 0} />
+            <div className="paper-plate w-full max-w-3xl" data-testid="panel-sky">
+              <div className="flex items-center justify-between px-3 pt-1 pb-2 gap-3 flex-wrap">
+                <p className="paper-tab">{COPY.sky.constellation(r.name)}</p>
+                <WorldPicker value={worlds[r.id] ?? null} auto={autoWorld} onChange={(w) => actions.setWorld(r.id, w)} />
+              </div>
+              <div className="sky-well">
+                <SkyMap
+                  key={roundIds.join('|')}
+                  name={r.name}
+                  world={worlds[r.id] ?? null}
+                  loves={loveList}
+                  refusals={refusalList}
+                  gifts={roundIdeas.map((g) => ({ id: g.id, sourceIds: srcOf.get(g.id)?.ids ?? [], saved: g.status === 'saved' }))}
+                  goldIds={goldIds}
+                  counts={counts}
+                  selected={sel}
+                  brightIds={brightIds}
+                  knockedIds={knockedIds}
+                  label={COPY.sky.constellation(r.name)}
+                  className="w-full"
+                />
+                <div className="px-2 pb-1"><SkyLegend showNo={refusalList.length > 0} showBright={brightIds.size > 0} showKnocked={knockedIds.size > 0} /></div>
+              </div>
+            </div>
             <h1 className="mt-4 text-4xl sm:text-5xl tracking-tight leading-[1.05]" data-testid="text-results-heading">{roundIdeas.length === 6 && new Set(roundIdeas.map(g => g.kind)).size === 6 ? COPY.results.heading : COPY.results.partial(roundIdeas.length)}</h1>
             <p className="mt-3 text-lg text-muted-foreground">{COPY.results.subhead}</p>
           </header>

@@ -1,5 +1,65 @@
 # Orbit & Wonder — Build record
 
+## Director / Professor / Librarian upgrade — 2026-10-31
+
+This section supersedes older current-state notes below. Order followed: recommendation reliability, disambiguation/copy, cards, then personalized skies. No card PNG pixels were changed, no new art generated, and no accounts, payments, tracking or shopping integrations added.
+
+### 1. Recommendation failure: causes and fixes
+
+- **Provider request root cause:** Claude Sonnet 5.5 rejects forced `tool_choice: tool`/`any` with HTTP 400, despite a valid key and successful helper calls. Checked Anthropic's current forcing-tool-use table. Generation/critic now use strict tool schemas with `auto` and disabled parallel tools. Direct Anthropic only, existing `ANTHROPIC_API_KEY`; model/helper default `claude-sonnet-5-5`. No credentials were viewed, logged or committed.
+- **Wire-contract root cause:** legitimate `sourceLoves: []` whole-sky fallback was allowed by runtime logic but rejected by the generated response validator's `minItems: 1`. OpenAPI now permits zero sources and generated server/client validators agree. No source connections are invented.
+- **Timeout/error handling:** overall server search budget 110 seconds; individual Claude calls 70 seconds; browser request 130 seconds. One automatic transient/network/timeout retry only. Server logs real sanitized error stage/type/status, not upstream bodies, keys or input payloads. Reviewed ideas survive a failed refill/critic.
+- **Answer preservation:** recipient/context/budget/loves/no's/owned fields, unsubmitted editor drafts and pending bodies are saved locally before submission. Retry/reload uses the saved body and the same idempotency key; failed server jobs are evicted, in-flight work and successful responses can be reattached. New intentional searches get new keys. Successful cached jobs expire after ten minutes; pending/cache counts are bounded. Disconnects release the HTTP concurrency slot exactly once, without cancelling shared work.
+- **Error copy:** “The stars didn't line up that time. Your answers are saved. Try again?” with Retry. Existing partial/no-list-won copy remains. Objective hard-no expansion checks, whole-word owned checks, budgets, duplicates and plain-merch exclusions remain strict in code. Semantic quality/kind/source meaning stays with the critic. No provider fallback.
+
+### 2–3. Disambiguation and exact copy
+
+- Plain colors, color/colour prefixes/suffixes, case variations and trailing punctuation bypass ambiguity questions and Wikipedia. Genuine ambiguity uses human-language options plus Something else; generic “entity” labels are removed.
+- Home headline: “Find the gift that's in their orbit.”
+- Home subline: “Tell us what they love. Tell us what they'd never be caught dead with. We'll map the rest.”
+- Share page: “Everyone has their own constellation. Learn theirs.”
+- App typography stays Josefin Sans / DM Sans. New typed card answers use Google Caveat only.
+
+### 4–5. Card fields, stationery and swap-readiness
+
+- Removed card budgets from editor/data/slots/rendering, including both Secret Santa budget slots. This does not remove the separate gift-search budget.
+- All I Want: no Because fields/slots; four single-line wishes, shrink/ellipsis, UI-only warning for extra prefilled wishes. This or That: seven per column.
+- Blank exports draw light ruled answer lines. Empty filled answers show faint prompts. Stumped's send-back sentence is blank-only; the slot default is actual approved text, not an embedded instruction bracket.
+- Footer is Made with Orbit & Wonder plus a short verified public link only. Deployment inspection found **no published domain**. Current app therefore prints brand alone; development/localhost URLs are rejected even in explicit renderer overrides. Optional actual QR support is implemented but disabled until a valid public link exists. Request-card links occur once, replacing rather than duplicating footer URLs.
+- Eight-thumbnail horizontal POP/Neutral paper shelf. One geometry entry per layout, shared by both versions; existing filenames remain the import seam. `paintedTitles` suppresses code-drawn title/labels for future painted art.
+- Every layout reserves a personal-sky corner and link/QR strip. Dev-only `/dev/cards` shows short/long samples and slot/reservation outlines; production does not register this route. Original art stays untouched until the Librarian uploads replacements.
+- Font/box fit remains maxFont → minFont → maxLines → ellipsis with clipping. Portrait remains 1080×1350; square contains the full portrait at 864×1080, centered, on starry 1080×1080, never cropped.
+
+### 6. Personal worlds and live constellations
+
+- Six category-selected placeholders: ringed giant, ocean, ember, ice/crystal, garden moon, nebula. Manual world choice persists per person. Optional world `art` URLs accept approved transparent PNGs from App Storage later, in both SVG and PNG export.
+- Name + ordered loves seed the pattern. Device chip IDs do not affect positions, ensuring the same person/profile sky in Results, Keepers and card miniatures. Selected saved-profile cards use the complete profile, not only the three visible Santa entries; blank-start/Stumped cards derive stars from typed answers.
+- Named love stars are tappable and accessible; More like this brightens source stars, rejected sources dim/cross out, and private no-list asteroids stay on the outer belt. Lines follow the ring, not through the planet. Live edits update code-drawn skies; reduced motion is static.
+- Results retain a clearly visible personal constellation. Results/share use warm cream/gold paper framing. Neutral card miniatures use warm monochrome, never introducing pink; future world PNGs are desaturated on neutral cards.
+
+### Verification and live outcome
+
+- TypeScript workspace check: **PASS**.
+- Frontend production build: **PASS** (`PORT=22717 BASE_PATH=/`); API production build: **PASS**.
+- Offline regression: **45 tests PASS**, including emitted-tool-schema samples, one correction with exact validation paths, tool transport, strict objective exclusions, job concurrency/retry/cache, empty-source wire response, color bypass, stable person/card stars, and clear reserved sky corners.
+- Browser card QA: **48 PNG cases verified, zero failures** (three profiles × four layouts × two versions × two sizes). An initial Stumped check caught an instruction fragment in the request default; fixed and reran its 12 affected cases, preserving the 36 unchanged passing cases. Also checked blank-only copy, real optional QR rendering, dev-link rejection, timeout retry classification, native download and exact square containment.
+- Phone home screenshot: correct copy/layout, no browser errors. Critical-flow browser pass at 402×874 and 1440×1000: intercepted all generation requests (zero paid calls), verified two 503s trigger exactly one same-body/key automatic retry, exact useful error, reload preserves answers/error, manual Retry restores three synthetic ideas/two kinds, and loves/no's/owned/context remain. Save/reject and More like payloads worked; Ocean override persisted, Results/Share had no page overflow, all eight papers and seven/four-row mappings worked, and blank PNG/calibration/brand-only footer worked. Synthetic output is not counted as live Claude output.
+- The initial browser observation of manual Retry used a new key; final code deliberately reuses the pending key for inflight/cached reattachment. Shared-job/failure-eviction behavior is covered offline.
+- That pass caught completion-form fields disappearing during a dev-server reconnect. Fixed the underlying in-memory-only draft: completion now uses **isolated sessionStorage** (never giver-profile/localStorage data), preserving all four answers on reload while a fresh tab stays blank. Share editor fields/template/paper/source/size/world also persist locally. Targeted `pnpm --filter @workspace/scripts exec tsx src/card-draft-qa.ts` **PASS**, with all generation requests blocked. Affected TypeScript and frontend production build rerun **PASS**.
+- Minor verification caveats: fixture source overlap combined rejected/brightened star state, so isolated brightening was not independently measured; desktop home Keepers highlight is cosmetic. No second browser tester or additional paid profile run was started.
+- One gated live evaluation only: Hinterwelle passed first with no format failures, then each remaining profile ran once. **No profile was rerun.** Full ideas/rejection reasons appear in the generated evaluation section below.
+
+| Profile | Ideas shown | Kinds | Claude calls | Format failures | Outcome |
+| --- | ---: | --- | ---: | ---: | --- |
+| Hinterwelle | 8 | All six | 4 | 0 | Pass |
+| Wolfboy | 7 | object, experience, maker, collectible | 6 | 0 | Safe partial; second critic hit overall timeout |
+| Mira | 11 | All six | 4 | 0 | Pass |
+| Sol | 10 | All six | 5 | 2 helper failures, recovered | Pass with helper recovery |
+
+Sol's first refusal reply exceeded the terms cap and first taste-expansion reply was invalid JSON. Helpers recovered/degraded safely and generation/critic tool replies had **zero** format failures. The conservative live CLI exits nonzero for any recorded helper-format failure; this is disclosed, not reported as a clean all-green run. Total Claude calls: **19**, including Wolfboy's aborted refill critic. Expansion/refusal/generation/critic counts are in the live report.
+
+Follow-through: README updated; source secret-pattern scan and whitespace check pass. Both managed services restarted and served the app/PNG requests. GCS deprecation and PassThrough listener-count warnings were observed despite successful PNG delivery; an optional investigation was proposed, without claiming a proven leak or hiding the warnings. A reusable mocked browser recovery regression was also proposed. Public GitHub snapshot push and local checkpoint identifiers are reported in the completion message. New PNG art and a published URL remain external inputs, not invented placeholders or dev-link substitutions.
+
 ## Source and scope
 
 Source: `attached_assets/orbit-and-wonder-spec_1793409177410.md`, dated October 30, 2026. Followed: overview and five-screen MVP; features/data model; server adapter and code rule check; Out of This World visual amendment; wish-list cards; sharePurpose amendment; Monday completion/delivery contract; final privacy/palette tweaks; Hinterwelle checks; wait-for-art handoff; COPY DECK; repo/documentation handoff.
@@ -202,43 +262,109 @@ Taste expansions use bounded six-hour in-memory caches keyed by profile identity
 - All eight share-card art slots and the share-card renderer remain untouched. No new interface copy was invented.
 
 <!-- CLAUDE_PROFILE_EVAL -->
-### Fixed-profile live evaluation — 2026-10-31T07:35:27.677Z
+### Fixed-profile live evaluation — 2026-10-31T21:59:31.197Z
 
-One search per profile, at most two generation rounds and one critic per round.
+Hinterwelle alone first. The other three run once each ONLY if it shows ideas and has zero format failures.
+At most two semantic generation rounds and one semantic critic pass per round; each malformed tool reply gets at most one format-only correction. Corrections count as Claude calls.
 Model: `claude-sonnet-5-5`; helper: `claude-sonnet-5-5`.
 
-| Profile | Result | Ideas shown | Kinds covered | Claude calls |
-| --- | --- | ---: | --- | ---: |
-| Hinterwelle | ZERO | 0 | — | 4 |
-| Wolfboy | ZERO | 0 | — | 4 |
-| Mira (easy) | ZERO | 0 | — | 4 |
-| Sol (sparse: two loves) | ZERO | 0 | — | 4 |
+| Profile | Result | Ideas shown | Kinds covered | Claude calls | Format failures |
+| --- | --- | ---: | --- | ---: | ---: |
+| Hinterwelle | PASS | 8 | object, experience, consumable, maker, collectible, wildcard | 4 | 0 |
+| Wolfboy | PARTIAL | 7 | object, experience, maker, collectible | 6 | 0 |
+| Mira (easy) | PASS | 11 | object, experience, consumable, maker, collectible, wildcard | 4 | 0 |
+| Sol (sparse: two loves) | PASS (format repaired) | 10 | object, experience, consumable, maker, collectible, wildcard | 5 | 2 |
 
 **Hinterwelle — ideas shown**
-- None.
+- object: Friesland porcelain teapot for proper Earl Grey brewing — $35–$80; sources: a good Earl Grey + German food
+- object: Factory Records: The Complete Graphic Album book — $35–$60; sources: Joy Division
+- experience: German baking or pretzel-making class for two — $40–$90; sources: German food
+- consumable: Bavarian pretzel and sweet mustard snack box — $20–$50; sources: German food
+- consumable: Harney & Sons Earl Grey Supreme loose-leaf tin — $15–$40; sources: a good Earl Grey
+- maker: Hand-embroidered Badtz-Maru patch for a jacket — $15–$40; sources: Badtz-Maru + Joy Division
+- collectible: Roky Erickson 'True Love Cast Out All Evil' vinyl, produced by Okkervil River's Will Sheff — $25–$60; sources: Okkervil River + The Black Angels
+- wildcard: Record store credit with a handwritten list of adjacent-artist picks — $25–$75; sources: Okkervil River + Joy Division
 
 **Hinterwelle — rejected ideas and reasons**
-- No critic verdicts: all 24 candidates were rejected by structured-field validation before the critic could run. See the blocker audit below.
+- [critic] Tickets to a local psych or indie-folk gig: A gig night out combines both bands' psych and indie-folk scenes and suits the friend relationship. It is loosely specified with no named show, but the budget is plausible and it is distinct.
+- [critic] DIY fuzz pedal kit for a psych-rock fan: No named kit or maker is given, so it is generic. It also assumes the friend plays guitar or tinkers, which the profile doesn't support. The link to the love is only moderate.
+- [critic] Vintage 1990s Sanrio Badtz-Maru item: 'Vintage 1990s Sanrio Badtz-Maru item' names no actual product. It is too vague to act on, and authenticity and pricing are uncertain.
+- [critic] Liquid light show projector kit for a psychedelic listening night: A generic 'projector kit' names no real product or maker. Liquid-light kits are hard to source and quality is unclear, so it can't be verified as a truthful, actionable item.
+
+**Hinterwelle — format failures**
+- None.
+
+**Hinterwelle — Claude calls by stage**
+- {"expansion":1,"refusals":1,"generation":1,"critic":1,"lookup":0}
 
 **Wolfboy — ideas shown**
-- None.
+- object: Universal Classic Monsters Complete Blu-ray Collection — $70–$140; sources: Universal Monsters + wolfman
+- object: Aurora-reissue Wolf Man and Frankenstein monster model kits for a build night — $50–$90; sources: Frankenstein's Monster + wolfman
+- experience: Classic horror double-feature night at a repertory cinema, with dinner — $50–$120; sources: Frankenstein's Monster + Universal Monsters
+- maker: Custom hand-stamped silver and turquoise ring — $60–$150; sources: turquoise + wolfman
+- maker: Hand-sculpted Wolf Man or Frankenstein's Monster bust by an independent artist — $60–$150; sources: Frankenstein's Monster + wolfman
+- collectible: NECA Ultimate Wolf Man action figure — $50–$80; sources: wolfman + Universal Monsters
+- collectible: Hasbro Marvel Legends Captain America shield replica — $90–$150; sources: Avengers + Marvel Universe
 
 **Wolfboy — rejected ideas and reasons**
-- No critic verdicts: all 24 candidates were rejected by structured-field validation before the critic could run. See the blocker audit below.
+- [critic] Day at Universal Studios Hollywood, with a classic monsters theme: Tickets for two at Universal Studios Hollywood cost well over the $110-150 stated. The DC Universe link is just a side stop at a comic shop, so it is not a real combination.
+- [critic] Mad-scientist cocktail kit with bitters, syrups and blue-green curaçao: No named kit or maker. Turquoise is only a drink colour, so this is a generic themed cocktail set.
+- [critic] Classic monster movie-night snack crate with gourmet popcorn and dark chocolate: Generic snack crate with no named product or maker. Marvel is added as an afterthought and the link to the monsters is weak.
+- [critic] Symbolic wolf adoption from a wolf conservation organisation: It treats the Wolf Man love as real wolves, which is a loose stretch. There is no named adoption program and only one love is used, so it feels generic.
+- [critic] Tesla-style plasma globe for a Frankenstein lab corner: A generic unbranded plasma globe. Turquoise is only a glow colour, and the Frankenstein link is a loose lightning metaphor.
+
+**Wolfboy — format failures**
+- None.
+
+**Wolfboy — Claude calls by stage**
+- {"expansion":1,"refusals":1,"generation":2,"critic":2,"lookup":0}
 
 **Mira (easy) — ideas shown**
-- None.
+- object: The Sibley Guide to Birds (2nd edition) for her birding life list — $25–$40; sources: birdwatching
+- object: Emile Henry ceramic fluted tart dish for lemon tart — $40–$70; sources: lemon baking + ceramics
+- experience: Early-morning guided bird walk through a botanical garden, with a picnic breakfast — $25–$75; sources: birdwatching + botanical gardens
+- experience: Pottery wheel-throwing class for two — $50–$90; sources: ceramics
+- consumable: Amalfi-style lemon treats box: lemon curd, lemon olive oil and lemon shortbread — $30–$60; sources: lemon baking
+- consumable: Lemon verbena and herb tea sampler inspired by garden herb beds — $25–$45; sources: botanical gardens + lemon baking
+- maker: Hand-thrown ceramic citrus juicer by an independent potter — $30–$70; sources: ceramics + lemon baking
+- maker: Handmade ceramic bird feeder or bird bath from a small pottery studio — $35–$90; sources: birdwatching + ceramics
+- collectible: Antique botanical plate from Curtis's Botanical Magazine — $35–$90; sources: botanical gardens
+- wildcard: Potted Meyer lemon tree for her windowsill or patio — $35–$80; sources: lemon baking + botanical gardens
+- wildcard: Cornell Lab of Ornithology gift membership — $30–$60; sources: birdwatching
 
 **Mira (easy) — rejected ideas and reasons**
-- No critic verdicts: all 24 candidates were rejected by structured-field validation before the critic could run. See the blocker audit below.
+- [critic] Vintage mid-century studio pottery bud vase: Vintage mid-century studio pottery is a plausible collectible and the bud vase ties it to garden cuttings. It is less specific, with no named potter, but it is acceptable and distinct.
 
-**Sol (sparse: two loves) — ideas shown**
+**Mira (easy) — format failures**
 - None.
 
-**Sol (sparse: two loves) — rejected ideas and reasons**
-- No critic verdicts: all 24 candidates were rejected by structured-field validation before the critic could run. See the blocker audit below.
+**Mira (easy) — Claude calls by stage**
+- {"expansion":1,"refusals":1,"generation":1,"critic":1,"lookup":0}
 
-PARTIAL means safe reviewed ideas are shown without full six-kind coverage. ZERO/ERROR is reported, never retried by this evaluator. Model JSON and trace files are ignored generated output, not committed. No simulated output is counted as a live run.
+**Sol (sparse: two loves) — ideas shown**
+- object: Cast-iron Dutch oven for open-crumb loaves — $60–$80; sources: sourdough baking
+- object: Tabletop planisphere and star-chart set for backyard stargazing — $20–$35; sources: astronomy
+- experience: Planetarium show and observatory night for two — $30–$80; sources: astronomy
+- experience: Small-group artisan bread-baking class for two — $50–$80; sources: sourdough baking
+- consumable: Heritage and stoneground flour trio for country loaves — $25–$60; sources: sourdough baking
+- maker: Custom hand-thrown ceramic banneton-style proofing bowl and lame set — $40–$80; sources: sourdough baking
+- maker: Custom star map print of the night you met — $25–$60; sources: astronomy
+- object: Vintage-style brass celestial globe or tabletop armillary sphere — $40–$80; sources: astronomy
+- collectible: Tartine Bakery cookbook by Chad Robertson (signed or first edition if possible) — $25–$60; sources: sourdough baking
+- wildcard: Pair of compact binoculars for stargazing and a moonlit loaf picnic — $40–$80; sources: astronomy + sourdough baking
+
+**Sol (sparse: two loves) — rejected ideas and reasons**
+- [critic] Night-sky honey and tea tasting box to enjoy while stargazing: No named product or maker. The "night-sky" label is generic theming, and honey and tea link only weakly to sourdough and astronomy.
+- [critic] Name-a-star style adoption alternative: Sourdough starter named after a star, with a night-sky baking journal: The gift is a sourdough starter, which they already own as a basic starter jar. "Name-a-star style" is a contrived gimmick with no real product or maker.
+
+**Sol (sparse: two loves) — format failures**
+- refusals, attempt 1: refusals.0.terms: Array must contain at most 40 element(s)
+- expansion, attempt 1: Response text is not valid JSON
+
+**Sol (sparse: two loves) — Claude calls by stage**
+- {"expansion":2,"refusals":1,"generation":1,"critic":1,"lookup":0}
+
+PARTIAL means safe reviewed ideas are shown without full six-kind coverage. ZERO/ERROR or any format failure closes the Hinterwelle gate, even if a correction recovered it. No profile is re-run by this evaluator. Model JSON and trace files are ignored generated output, not committed. No simulated output is counted as a live run.
 <!-- /CLAUDE_PROFILE_EVAL -->
 
 ## Director-approved final share-card art integration
@@ -300,7 +426,7 @@ This section supersedes the earlier all-six-or-none, keyword-quality and three-r
 - The four-profile live evaluator is run **once** after this coherent fix. Its current results, number shown, kinds, calls and rejection reasons are recorded in the marked live-evaluation section above. No profile is tuned/re-run afterward, even if it fails.
 - All eight approved share-card assets, slots and rendering paths are unchanged by this revision.
 
-### Single live-pass outcome — remaining blocker, stopped as directed
+### Historical previous pass — pre-tool protocol blocker
 
 **Live verification did not pass.** All four profiles returned zero. Each search made exactly four Claude calls: one taste expansion, one refusal expansion and two generation calls; **zero critic calls**. Total: 16 calls. No profile was re-run after this result, and no further runtime fix/tuning was made.
 
@@ -417,3 +543,30 @@ All titles below share the source-detail format rejection described above. No cl
 - Used older edition of Norton's Star Atlas
 - Moon-phase sourdough baking journal
 - Smartphone adapter for binoculars or telescopes for Moon photography
+
+## Director's structured-tool contract pass — 2026-10-31
+
+### Implemented and verified offline
+
+- Added one Zod generation envelope and one Zod critic envelope as the source of their tool definitions and local validation. Generation explicitly includes `sourceDetails: [{ love: string, detail: string }]`; critic has typed kind, specificity, source identities, pass/fail, reason and duplicate identity.
+- Definitions are converted with `zod-to-json-schema`, without hand-maintained parallel JSON shapes. All objects reject unknown properties. Following Anthropic's documented schema-subset rules, unsupported bounds are mechanically added to descriptions; the original bounds are still enforced by Zod. No hard-no, owned-item or generic-merch checks were weakened.
+- The transport submits one strict tool and reads its `tool_use.input`, not free-text JSON. A malformed reply gets exactly one format-only correction containing its previous reply and specific validation errors. Critic identity/cardinality errors follow that same correction path.
+- Format failures have their own stage/attempt/issues records and search-log count, separate from objective and critic rejections. Unrecoverable generation/critic format failures throw an explicit error instead of turning a round into zero passing gifts. Previously reviewed partial results remain retained if a later refill fails.
+- Added the offline contract suite to `pnpm test:gifts` and API prebuild. It constructs sample responses from the actual emitted tool schemas and validates them with the exact Zod source, checks the formerly broken text/string-array alternatives, exercises one-correction limits, and checks strict-tool transport. Pipeline tests cover explicit format errors and corrected critic identities.
+- **39 regression tests passed**, full workspace TypeScript checks passed, and the API production build/restart passed before the first paid request. Test-only fixture errors in logs are deliberately injected failures, not live results.
+
+### Gated live result — stopped, not live-verified
+
+The current evaluation table above is this pass's result. Hinterwelle made **three attempted Claude requests**: one successful taste expansion, one successful refusal expansion and one generation request rejected with HTTP 400. There were zero critic calls, zero candidates shown and no critic rejection reasons. The other three profiles made **zero calls** because the gate stayed closed. No profile was retried and no implementation tuning was made after the failed live attempt.
+
+**Reply-format failures: 0 received invalid replies; generation format validation was never reached. Request rejection: 1 (HTTP 400).** The zero reply-error count is not a successful format test.
+
+Post-failure, read-only documentation review identified the compatibility issue: Anthropic explicitly lists **Claude Sonnet 5.5** among models where forced `tool_choice: tool` or `any` returns HTTP 400. The documented supported alternative is **`tool_choice: auto` with strict tools**. This revision still contains the incompatible forced choice; the Director's stop-on-Hinterwelle-failure rule was honored rather than changing it and rerunning. The upstream error body was not retained, so only the HTTP status was directly observed.
+
+Documentation:
+- https://platform.claude.com/docs/en/agents-and-tools/tool-use/implement-tool-use#forcing-tool-use
+- https://platform.claude.com/docs/en/build-with-claude/structured-outputs#json-schema-limitations
+
+Model settings remain `ANTHROPIC_MODEL=claude-sonnet-5-5`, with the helper defaulting to the same model. Existing `ANTHROPIC_API_KEY` was used only by the direct API transport; no credential values were printed or committed. No provider fallback was added.
+
+All eight approved share-card images, their slots, colour selection and export renderer remain untouched. This is a checkpoint of the structured-contract work and its **known live blocker**, not a claim that gift generation is fixed or ready to publish.

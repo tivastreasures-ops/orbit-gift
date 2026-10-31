@@ -1,5 +1,8 @@
 import { CARD_TEXT, COPY, NEED } from './copy';
 import SLOTS from './card-slots.json';
+import { PUBLIC_CARD_URL, shortLink, validatePublicUrl } from './public-url';
+import { drawMiniSky, chooseWorld, WORLDS, type MiniSkyInput } from './sky';
+import QRCode from 'qrcode';
 
 export type TemplateId = 'santa' | 'wish' | 'stumped' | 'tot';
 export type Purpose = 'hint' | 'list' | 'ask';
@@ -13,22 +16,22 @@ export const PURPOSE_TEMPLATES: Record<Purpose, TemplateId[]> = {
 };
 
 export interface CardFields {
-  santa: { loves: string[]; nos: string[]; budget: string };
-  wish: { wishes: { wish: string; because: string }[] };
+  santa: { loves: string[]; nos: string[] };
+  wish: { wishes: string[] };
   stumped: { love: string; no: string; own: string; hint: string };
   tot: { yes: string[]; no: string[] };
 }
 
 export const emptyFields = (): CardFields => ({
-  santa: { loves: ['', '', ''], nos: ['', '', ''], budget: '' },
-  wish: { wishes: [0, 1, 2, 3].map(() => ({ wish: '', because: '' })) },
+  santa: { loves: ['', '', ''], nos: ['', '', ''] },
+  wish: { wishes: ['', '', '', ''] },
   stumped: { love: '', no: '', own: '', hint: '' },
   tot: { yes: Array(7).fill(''), no: Array(7).fill('') },
 });
 
 
-type Version = 'main' | 'neutral';
-const SLUG: Record<TemplateId, string> = {
+export type Version = 'main' | 'neutral';
+export const SLUG: Record<TemplateId, string> = {
   santa: 'secret-santa', wish: 'all-i-want', stumped: 'im-stumped', tot: 'this-or-that',
 };
 const apiBase = () => (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
@@ -90,27 +93,27 @@ export interface RenderOpts {
   fields: CardFields;
   omit: Set<string>;
   name: string;
-  showBudget: boolean;
   refusals: string[];
   appName: string;
-  appUrl: string;
-  completionUrl?: string;
+  /** Verified public URL only (PUBLIC_CARD_URL). Never a dev host. Empty = brand-only footer. */
+  publicUrl?: string;
+  showQr?: boolean;
+  /** Person's world + pattern for the reserved bottom-right corner (filled cards only). */
+  sky?: MiniSkyInput | null;
+  /** Paper shelf choice; the no-list palette check can still force neutral. */
+  prefer?: Version;
+  /** Dev calibration: outline slots and reserved areas. */
+  debug?: boolean;
 }
 
-const pad = (a: string[], n: number) => [...a, ...Array(Math.max(0, n - a.length)).fill('')].slice(0, n);
-
 /** Every filled entry of a template, keyed the same way the renderer omits them. */
-export function entryList(t: TemplateId, f: CardFields, budgetAllowed: boolean): Entry[] {
+export function entryList(t: TemplateId, f: CardFields): Entry[] {
   const out: Entry[] = [];
   if (t === 'santa') {
     f.santa.loves.forEach((x, i) => x.trim() && out.push({ key: `santa.loves.${i}`, text: x.trim() }));
     f.santa.nos.forEach((x, i) => x.trim() && out.push({ key: `santa.nos.${i}`, text: x.trim() }));
-    if (budgetAllowed && f.santa.budget.trim()) out.push({ key: 'santa.budget', text: f.santa.budget.trim() });
   } else if (t === 'wish') {
-    f.wish.wishes.forEach((w, i) => {
-      if (w.wish.trim()) out.push({ key: `wish.${i}`, text: w.wish.trim() });
-      if (w.because.trim()) out.push({ key: `wish.because.${i}`, text: w.because.trim() });
-    });
+    f.wish.wishes.forEach((w, i) => w.trim() && out.push({ key: `wish.${i}`, text: w.trim() }));
   } else if (t === 'tot') {
     f.tot.yes.forEach((x, i) => x.trim() && out.push({ key: `tot.yes.${i}`, text: x.trim() }));
     f.tot.no.forEach((x, i) => x.trim() && out.push({ key: `tot.no.${i}`, text: x.trim() }));
@@ -123,27 +126,46 @@ export function entryList(t: TemplateId, f: CardFields, budgetAllowed: boolean):
 }
 
 
-interface SlotDef {
+export interface Box { x: number; y: number; w: number; h: number }
+export interface SlotDef {
   id: string; x: number; y: number; w: number; h: number;
-  align?: 'center'; maxFont: number; minFont: number; maxLines: number; text?: string; prefix?: string;
+  align?: 'center'; maxFont: number; minFont: number; maxLines: number; text?: string; prefix?: string; prompt?: string;
 }
-const SRC_W = SLOTS.canvas.width;
-const SRC_H = SLOTS.canvas.height;
-const slotsFor = (t: TemplateId) => (SLOTS.templates as Record<string, { slots: SlotDef[] }>)[SLUG[t]].slots;
+export interface Layout {
+  images: Record<Version, string>;
+  paintedTitles: boolean;
+  reserved: { constellation: Box; strip: Box };
+  slots: SlotDef[];
+}
+export const SRC_W = SLOTS.canvas.width;
+export const SRC_H = SLOTS.canvas.height;
+export const LAYOUTS = SLOTS.templates as unknown as Record<string, Layout>;
+export const layoutFor = (t: TemplateId): Layout => LAYOUTS[SLUG[t]];
+export const slotsFor = (t: TemplateId) => layoutFor(t).slots;
 const slotText = (t: TemplateId, id: string) => slotsFor(t).find((s) => s.id === id)?.text ?? '';
 
-const isJosefin = (id: string) => id === 'title' || id === 'subtitle' || /-(label|heading)$/.test(id);
+export const isLabelSlot = (id: string) => id === 'title' || id === 'subtitle' || /-(label|heading)$/.test(id);
+const isPlainSlot = (id: string) => id === 'footer' || id === 'link' || id === 'opening' || id === 'request';
+/** Typed answers (handwriting). */
+export const isEntrySlot = (id: string) => !isLabelSlot(id) && !isPlainSlot(id);
+
+const STUMPED_SEND_BACK = /\s*Then send your answers back to me!\s*$/;
+
+export function footerText(appName: string, publicUrl = PUBLIC_CARD_URL) {
+  return COPY.footer(appName, publicUrl ? shortLink(publicUrl) : '');
+}
 
 /** Maps editor fields + mode + omit list to exact slot ids. Missing ids are not drawn. */
 export function slotValues(o: RenderOpts): Record<string, string> {
   const v: Record<string, string> = {};
   const filled = o.mode === 'filled';
   const f = o.fields;
+  const pub = validatePublicUrl(o.publicUrl ?? PUBLIC_CARD_URL);
   const keep = (key: string, text: string) => !o.omit.has(key) && text.trim().length > 0;
   const pack = (prefix: string, arr: string[]) =>
     arr.map((t, i) => ({ key: `${prefix}.${i}`, text: t.trim() })).filter((e) => keep(e.key, e.text)).map((e) => e.text);
   const opening = filled && o.purpose ? COPY.opening[`${o.template}_${o.purpose}`] : undefined;
-  v.footer = COPY.footer(o.appName, o.appUrl);
+  v.footer = footerText(o.appName, pub);
 
   if (o.template === 'santa') {
     v.title = slotText('santa', 'title');
@@ -153,30 +175,16 @@ export function slotValues(o: RenderOpts): Record<string, string> {
     if (filled) {
       pack('santa.loves', f.santa.loves).slice(0, 3).forEach((t, i) => (v[`love-${i + 1}`] = t));
       pack('santa.nos', f.santa.nos).slice(0, 3).forEach((t, i) => (v[`no-${i + 1}`] = t));
-      // Budget never appears on hint cards; label hides with value.
-      if (o.purpose !== 'hint' && o.showBudget && keep('santa.budget', f.santa.budget)) {
-        v['budget-label'] = slotText('santa', 'budget-label');
-        v.budget = f.santa.budget.trim();
-      }
-    } else if (o.purpose !== 'hint') v['budget-label'] = slotText('santa', 'budget-label');
+    }
   } else if (o.template === 'wish') {
     v.title = slotText('wish', 'title');
     v.opening = opening ?? CARD_TEXT.wish.subtitle;
-    const prefix = slotsFor('wish').find((s) => s.id === 'because-1')?.prefix ?? '';
-    const strip = (s: string) => s.replace(/^\s*because\s*(\.{3}|…)?\s*/i, '');
-    if (filled) {
-      f.wish.wishes
-        .map((w, i) => ({ i, wish: w.wish.trim(), because: strip(w.because.trim()) }))
-        .filter((w) => keep(`wish.${w.i}`, w.wish))
-        .slice(0, 4)
-        .forEach((w, n) => {
-          v[`wish-${n + 1}`] = w.wish;
-          if (keep(`wish.because.${w.i}`, w.because)) v[`because-${n + 1}`] = prefix + w.because;
-        });
-    } else for (let n = 1; n <= 4; n++) v[`because-${n}`] = prefix.trimEnd();
+    if (filled) pack('wish', f.wish.wishes).slice(0, 4).forEach((t, i) => (v[`wish-${i + 1}`] = t));
   } else if (o.template === 'stumped') {
     v.title = slotText('stumped', 'title');
-    v.request = slotText('stumped', 'request');
+    const full = slotText('stumped', 'request');
+    // "Then send your answers back to me!" only on the Blank Card export.
+    v.request = o.mode === 'blank' ? full : full.replace(STUMPED_SEND_BACK, '');
     (['love', 'no', 'own', 'hint'] as const).forEach((k, i) => {
       v[`q${i + 1}-label`] = slotText('stumped', `q${i + 1}-label`);
       if (filled) {
@@ -184,8 +192,12 @@ export function slotValues(o: RenderOpts): Record<string, string> {
         if (lines.length) v[`q${i + 1}-answer`] = lines.map((e) => e.text).join('\n');
       }
     });
-    if (o.mode !== 'blank') v.link = `Fill it in at ${o.completionUrl || completionUrl()}`;
     if (o.mode === 'blank') v.link = NEED('label on blank PNG saying it is for print/manual completion');
+    else if (o.mode === 'request' && pub) {
+      // One link only: the fill-in link replaces the footer link.
+      v.link = `Fill it in at ${shortLink(pub)}/complete`;
+      v.footer = COPY.footer(o.appName, '');
+    }
   } else {
     (['yes-heading', 'no-heading', 'title', 'subtitle'] as const).forEach((id) => (v[id] = slotText('tot', id)));
     if (opening) v.opening = opening;
@@ -194,6 +206,7 @@ export function slotValues(o: RenderOpts): Record<string, string> {
       pack('tot.no', f.tot.no).slice(0, 7).forEach((t, i) => (v[`no-${i + 1}`] = t));
     }
   }
+  if (layoutFor(o.template).paintedTitles) for (const id of Object.keys(v)) if (isLabelSlot(id)) delete v[id];
   return v;
 }
 
@@ -243,10 +256,18 @@ function ellipsize(ctx: CanvasRenderingContext2D, line: string, maxW: number) {
   return g.join('').trimEnd() + '…';
 }
 
-function drawSlot(ctx: CanvasRenderingContext2D, s: SlotDef, text: string, ink: string, kx: number, ky: number): SlotDiagnostic {
+export type SlotFont = 'label' | 'entry' | 'plain';
+export const slotFont = (id: string): SlotFont => (isLabelSlot(id) ? 'label' : isEntrySlot(id) ? 'entry' : 'plain');
+
+/**
+ * Reusable fit: max font -> shrink to min -> wrap to maxLines -> ellipsis. Clipped to the box,
+ * so nothing is ever drawn outside the slot. Exported for QA.
+ */
+export function fitSlot(ctx: CanvasRenderingContext2D, s: SlotDef, text: string, ink: string, kx: number, ky: number, alpha = 1): SlotDiagnostic {
   const box = { x: s.x * kx, y: s.y * ky, w: s.w * kx, h: s.h * ky };
-  const family = isJosefin(s.id) ? '"Josefin Sans"' : '"DM Sans"';
-  const weight = isJosefin(s.id) ? (s.id === 'title' ? 300 : 600) : 400;
+  const kind = slotFont(s.id);
+  const family = kind === 'label' ? '"Josefin Sans"' : kind === 'entry' ? '"Caveat"' : '"DM Sans"';
+  const weight = kind === 'label' ? (s.id === 'title' ? 300 : 600) : kind === 'entry' ? 600 : 400;
   const LH = 1.18;
   const fontAt = (px: number) => `${weight} ${px}px ${family}`;
   const single = text.replace(/\s*\n\s*/g, ' ');
@@ -256,8 +277,10 @@ function drawSlot(ctx: CanvasRenderingContext2D, s: SlotDef, text: string, ink: 
     const lineH = Math.max(px * LH, m.actualBoundingBoxAscent + m.actualBoundingBoxDescent);
     return lineH * n <= box.h + 0.5 ? lineH : 0;
   };
-  let px = s.maxFont * kx;
-  const minPx = s.minFont * kx;
+  // Caveat runs small for its size; scale entries up so they read like the old body text.
+  const boost = kind === 'entry' ? 1.22 : 1;
+  let px = s.maxFont * kx * boost;
+  const minPx = s.minFont * kx * boost;
   let lines: string[] = [];
   let ellipsis = false;
   const hasBreaks = text.includes('\n') && s.maxLines > 1;
@@ -286,6 +309,7 @@ function drawSlot(ctx: CanvasRenderingContext2D, s: SlotDef, text: string, ink: 
   ctx.rect(box.x, box.y, box.w, box.h);
   ctx.clip();
   ctx.fillStyle = ink;
+  ctx.globalAlpha = alpha;
   ctx.textBaseline = 'alphabetic';
   ctx.textAlign = s.align === 'center' ? 'center' : 'left';
   const bx = { l: Infinity, t: Infinity, r: -Infinity, b: -Infinity };
@@ -321,7 +345,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-const FONT_SPECS = ['300 40px "Josefin Sans"', '600 40px "Josefin Sans"', '400 40px "DM Sans"'];
+const FONT_SPECS = ['300 40px "Josefin Sans"', '600 40px "Josefin Sans"', '400 40px "DM Sans"', '600 40px "Caveat"'];
 let fontsReady: Promise<void> | null = null;
 function ensureFonts(): Promise<void> {
   if (!fontsReady) {
@@ -357,6 +381,27 @@ function starrySquare(portrait: HTMLCanvasElement): HTMLCanvasElement {
 
 export interface RenderResult { canvas: HTMLCanvasElement; neutral: boolean; diagnostics: SlotDiagnostic[] }
 
+function ruledLines(ctx: CanvasRenderingContext2D, s: SlotDef, kx: number, ky: number) {
+  const box = { x: s.x * kx, y: s.y * ky, w: s.w * kx, h: s.h * ky };
+  const n = Math.max(1, Math.min(s.maxLines, Math.floor(box.h / (34 * ky))));
+  ctx.save();
+  ctx.strokeStyle = 'rgba(44, 42, 39, 0.22)';
+  ctx.lineWidth = 1.2;
+  for (let i = 1; i <= n; i++) {
+    const y = Math.round(box.y + (box.h / n) * i - 4 * ky) + 0.5;
+    ctx.beginPath(); ctx.moveTo(box.x + 2, y); ctx.lineTo(box.x + box.w - 2, y); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function outline(ctx: CanvasRenderingContext2D, b: Box, kx: number, ky: number, color: string, label?: string) {
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+  ctx.strokeRect(b.x * kx, b.y * ky, b.w * kx, b.h * ky);
+  if (label) { ctx.fillStyle = color; ctx.font = '600 14px "DM Sans"'; ctx.fillText(label, b.x * kx + 3, b.y * ky - 4); }
+  ctx.restore();
+}
+
 async function renderVersion(o: RenderOpts, version: Version, ink: string): Promise<RenderResult> {
   const [img] = await Promise.all([loadImage(ART_SLOTS[o.template][version]), ensureFonts()]);
   const W = 1080, H = 1350;
@@ -367,10 +412,41 @@ async function renderVersion(o: RenderOpts, version: Version, ink: string): Prom
   ctx.drawImage(img, 0, 0, W, H);
   const kx = W / SRC_W, ky = H / SRC_H;
   const vals = slotValues(o);
+  const layout = layoutFor(o.template);
+  const qr = { x: layout.reserved.strip.x + layout.reserved.strip.w - 70,
+    y: layout.reserved.strip.y, w: 70, h: 70 };
+  const publicUrl = validatePublicUrl(o.publicUrl ?? PUBLIC_CARD_URL);
+  const showQr = !!o.showQr && !!publicUrl;
   const diagnostics: SlotDiagnostic[] = [];
-  for (const s of slotsFor(o.template)) {
+  for (const s of layout.slots) {
     const t = vals[s.id];
-    if (t && t.trim()) diagnostics.push(drawSlot(ctx, s, t, ink, kx, ky));
+    const bounded = showQr && s.id === 'footer' ? { ...s, w: Math.min(s.w, qr.x - s.x - 16) } : s;
+    if (t && t.trim()) diagnostics.push(fitSlot(ctx, bounded, t, ink, kx, ky));
+    else if (isEntrySlot(s.id) && s.prompt) {
+      if (o.mode === 'blank') ruledLines(ctx, s, kx, ky);
+      else if (o.mode === 'filled') fitSlot(ctx, s, s.prompt, ink, kx, ky, 0.3);
+    }
+  }
+  const sky = o.sky;
+  if (sky) {
+    const c = layout.reserved.constellation;
+    const worldArt = WORLDS[sky.world ?? chooseWorld(sky.loves, sky.name)].art;
+    const worldImage = worldArt ? await loadImage(worldArt) : undefined;
+    drawMiniSky(ctx, { x: c.x * kx, y: c.y * ky, w: c.w * kx, h: c.h * ky },
+      { ...sky, worldImage, monochrome: version === 'neutral' });
+  }
+  if (showQr) {
+    const qrCanvas = document.createElement('canvas');
+    await QRCode.toCanvas(qrCanvas, o.mode === 'request' ? `${publicUrl}/complete` : publicUrl, {
+      width: Math.round(qr.w * kx), margin: 2, color: { dark: '#2C2A27', light: '#FFF8E8' },
+    });
+    ctx.drawImage(qrCanvas, qr.x * kx, qr.y * ky, qr.w * kx, qr.h * ky);
+  }
+  if (o.debug) {
+    for (const s of layout.slots) outline(ctx, s, kx, ky, isLabelSlot(s.id) ? '#B0306A' : isEntrySlot(s.id) ? '#1F6FB0' : '#2E8B57', s.id);
+    outline(ctx, layout.reserved.constellation, kx, ky, '#D07A00', 'constellation');
+    outline(ctx, layout.reserved.strip, kx, ky, '#D07A00', 'strip');
+    outline(ctx, qr, kx, ky, '#2E8B57', 'QR');
   }
   const out = o.size === 'square' ? starrySquare(canvas) : canvas;
   return { canvas: out, neutral: version === 'neutral', diagnostics };
@@ -381,10 +457,14 @@ export async function renderCard(o: RenderOpts): Promise<RenderResult> {
   const { pal, neutral } = choosePalette(o.template, o.refusals);
   // Starry square background is app navy: a blue/navy hard-no fails closed rather than use a forbidden bg.
   if (o.size === 'square' && hits(SQUARE_BG, o.refusals).length) throw new Error('No permitted square background');
+  if (!neutral && o.prefer === 'neutral') {
+    // Shelf asked for Neutral: allowed unless the no list also hits a neutral-only colour.
+    if (hits(NEUTRALS[o.template].families, o.refusals).length === 0) return renderVersion(o, 'neutral', NEUTRALS[o.template].ink);
+  }
   return renderVersion(o, neutral ? 'neutral' : 'main', pal.ink);
 }
 
-/** QA ONLY — forces main or neutral art, skipping the palette check. Not wired to UI. */
+/** QA / dev calibration only: forces main or neutral art, skipping the palette check. */
 export function renderReviewCard(o: RenderOpts, version: Version): Promise<RenderResult> {
   return renderVersion(o, version, INK);
 }

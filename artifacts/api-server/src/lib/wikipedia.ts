@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { normal } from "./rules";
 import { cacheKey, TasteCache } from "./taste-cache";
+import { colourMatch } from "./colours";
 
 export interface WikiEntity { id: string; name: string; kind: string; description: string }
 const cache = new TasteCache<WikiEntity[]>(400, 24 * 60 * 60 * 1000);
@@ -12,6 +13,8 @@ const pagesSchema = z.object({
   error: z.unknown().optional(),
 });
 export async function searchWikipedia(text: string, transport: typeof fetch = fetch): Promise<WikiEntity[]> {
+  const colour = colourMatch(text);
+  if (colour) return [{ ...colour, description: colour.name }];
   const result = await cache.get(cacheKey(["wiki-v2", normal(text)]), async () => {
     const url = new URL("https://en.wikipedia.org/w/api.php");
     url.search = new URLSearchParams({
@@ -32,7 +35,7 @@ export async function searchWikipedia(text: string, transport: typeof fetch = fe
       // Classify the defining predicate, not the proper name: the word "River"
       // in the band's name must not label Okkervil River as the river.
       const definition = description.split(/\b(?:is|are|was|were)\b/i).slice(1).join(" ").split(/[.!?\n]/)[0] ?? "";
-      const kind = definition.match(/\b(band|river|musician|tea|food|character|artist|writer|city|novel|game)\b/i)?.[1]?.toLowerCase() ?? "entity";
+      const kind = definition.match(/\b(band|river|musician|tea|food|character|artist|writer|city|novel|game)\b/i)?.[1]?.toLowerCase() ?? "topic";
       return { id: `wiki:${p.pageid}`, name: p.title, kind, description };
     });
   });
@@ -42,7 +45,7 @@ export async function resolveLove(love: string, selectedId?: string) {
   const candidates = await searchWikipedia(love);
   // Explicit confirmed selection wins. Without it, only an exact article title
   // resolves automatically; uncertain entities stay unresolved, never guessed.
-  const selected = selectedId
+  const selected = colourMatch(love) ? candidates[0] : selectedId
     ? candidates.find(c => c.id === selectedId)
     : candidates.find(c => normal(c.name) === normal(love));
   return { love, selected: selected ?? null, candidates };

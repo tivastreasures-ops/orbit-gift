@@ -1,13 +1,13 @@
-import { z } from "zod";
 import { assertClaudeConfigured, createClaudeSession, type ClaudeSession } from "./llm";
 import { normal, passesRules, hardNoHits } from "./rules";
-import { candidateSchema, KINDS, objectiveIssue, QUALITY_PROMPT, type QualityCandidate } from "./quality";
+import { KINDS, objectiveIssue, QUALITY_PROMPT, type QualityCandidate } from "./quality";
+import { generationContract, requestTool, ToolFormatError } from "./tool-contracts";
 import { profileExpander, type ProfileExpander } from "./profile-expansion";
 import { refusalExpander, type RefusalExpander } from "./refusals";
 import { critique, type RankedCandidate } from "./critic";
 import type { GiftInput } from "@workspace/api-zod";
 
-type Violation = { title: string; issues: string[]; stage: "objective" | "critic" | "helper" };
+type Violation = { title: string; issues: string[]; stage: "objective" | "critic" | "helper" | "format" };
 interface Dependencies {
   claude?: ClaudeSession; profiles?: ProfileExpander; refusals?: RefusalExpander;
   trace?: (event: { round: number; acceptedKinds: string[]; eligible: number; violations: Violation[] }) => void;
@@ -19,7 +19,8 @@ export async function generate(input: GiftInput, deps: Dependencies = {}) {
   finally {
     console.info("Claude search calls:", JSON.stringify({
       total: Object.values(claude.calls).reduce((a, b) => a + b, 0),
-      ...claude.calls, model: claude.model, helperModel: claude.helperModel,
+      ...claude.calls, formatFailures: claude.formatFailures?.length ?? 0,
+      model: claude.model, helperModel: claude.helperModel,
     }));
   }
 }
@@ -44,24 +45,17 @@ async function search(input: GiftInput, claude: ClaudeSession, deps: Dependencie
   for (let round = 0; round < 2 && new Set(accepted.map(g => g.kind)).size < KINDS.length; round++) {
     rounds++;
     try {
-    const data = await claude.json("generation",
+    const data = await requestTool(claude, "generation",
       `Propose concrete gift IDEAS, not verified listings. Use expanded tastes when available and plain supplied love identities otherwise.
 ${QUALITY_PROMPT}
-Return {"ideas":[...]} fields: title,category,colours (positive actual colours, at least one),brand (empty if unspecified),materials (positive actual materials, at least one),priceMin,priceMax (USD within budget),whereToLook (venue type, never URL),kind,sourceLoves,sourceDetails,contextType,contextValue,contextDetail,maker,namedItem,handmade.
+Submit candidates using the tool. Supply positive actual colours and materials, not statements that an excluded colour/material is absent.
 Correct supplied contractViolations, avoid excluded titles and near-duplicates. Prioritise neededKinds but do not invent products to fill them.`,
       { ...constraints, sourceLoves: input.loves, expandedProfile: profile.value, plainLoveFallback: profile.degraded,
         expandedRefusalTerms: noList.terms, excludeTitles: [...excluded],
         neededKinds: KINDS.filter(k => !accepted.some(g => g.kind === k)),
-        existing: accepted, contractViolations: violations.slice(-30) });
-    const raw = z.object({ ideas: z.array(z.unknown()).max(24) }).parse(data).ideas;
+        existing: accepted, contractViolations: violations.slice(-30) }, generationContract);
     const eligible: RankedCandidate[] = [];
-    for (const [index, value] of raw.entries()) {
-      const parsed = candidateSchema.safeParse(value);
-      if (!parsed.success) {
-        reject("", parsed.error.issues.map(i => `invalid structured field ${i.path.join(".")}: ${i.message}`));
-        continue;
-      }
-      const gift = parsed.data;
+    for (const [index, gift] of data.ideas.entries()) {
       if (excluded.has(normal(gift.title))) { reject(gift.title, ["duplicate/prior title"]); continue; }
       excluded.add(normal(gift.title));
       const issues: string[] = [];
@@ -89,12 +83,17 @@ Correct supplied contractViolations, avoid excluded titles and near-duplicates. 
           sourceLoves: sources.some(s => !s) ? [] : [...new Set(sources as string[])] });
       }
     } catch (error) {
+      if (error instanceof ToolFormatError) throw error;
       const reason = error instanceof Error ? error.message : String(error);
       console.warn("Gift critic failed:", reason);
       reject("", [reason], "helper");
     }
     trace(eligible.length);
     } catch (error) {
+      if (error instanceof ToolFormatError) {
+        reject("", [error.message], "format");
+        trace(0);
+      }
       // A later upstream/JSON failure must never erase already reviewed passes.
       if (!accepted.length) throw error;
       const reason = error instanceof Error ? error.message : String(error);

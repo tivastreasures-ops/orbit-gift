@@ -81,7 +81,7 @@ function ReturnedAnswers({ r }: { r: Recipient }) {
 }
 
 export default function Keepers() {
-  const { recipients, gifts, chips } = useData();
+  const { recipients, gifts, chips, worlds } = useData();
   const [sel, setSel] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [pick, setPick] = useState<SkySelection | null>(null);
@@ -167,6 +167,8 @@ export default function Keepers() {
           <>
             <SkyMap
               key={current.id}
+              name={current.name}
+              world={worlds[current.id] ?? null}
               loves={loveList}
               refusals={nos.map((c) => ({ id: c.id, text: c.text }))}
               gifts={saved.map((g) => ({ id: g.id, sourceIds: srcOf.get(g.id)?.ids ?? [], saved: true }))}

@@ -29,7 +29,7 @@ export default function RefusalsPage() {
           className="field resize-y"
           placeholder={COPY.refuse.ownPh}
           value={owned}
-          onChange={(e) => setOwned(e.target.value)}
+          onChange={(e) => { setOwned(e.target.value); actions.updateRecipient(r.id, { owned: e.target.value }); }}
           onBlur={() => actions.updateRecipient(r.id, { owned })}
           data-testid="input-owned"
         />

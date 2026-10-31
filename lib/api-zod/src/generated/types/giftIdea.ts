@@ -16,8 +16,8 @@ export interface GiftIdea {
   whereToLook: string;
   because: string;
   /**
-     * Exact supplied love strings validated by the server; optional for older locally saved ideas.
-     * @minItems 1
+     * Exact supplied love strings validated by the server; empty means whole-sky fallback, optional for older locally saved ideas.
+     * @minItems 0
      * @maxItems 2
      */
   sourceLoves?: string[];

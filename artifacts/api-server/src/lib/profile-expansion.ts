@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { GiftInput } from "@workspace/api-zod";
 import type { ClaudeSession } from "./llm";
+import { recordFormatFailure } from "./tool-contracts";
 import { cacheKey, TasteCache } from "./taste-cache";
 import { resolveLove } from "./wikipedia";
 import { normal } from "./rules";
@@ -41,6 +42,8 @@ Return {"loves":[{"love":"EXACT original love","specifics":[],"eras":[],"subgenr
                 loves.some(love => !data.loves.some(e => normal(e.love) === normal(love)))) throw new Error("Expansion source contract failed");
             return { loves: data.loves.map(entry => ({ ...entry, love: loves.find(l => normal(l) === normal(entry.love))! })) };
           } catch (error) {
+            if (error instanceof z.ZodError) recordFormatFailure(claude, "expansion", attempt + 1,
+              error.issues.map(i => `${i.path.join(".")}: ${i.message}`));
             last = error;
             console.warn(`Taste expansion attempt ${attempt + 1} failed:`, error instanceof Error ? error.message : String(error));
           }

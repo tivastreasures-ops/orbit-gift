@@ -4,14 +4,26 @@ import { Switch } from '@/components/ui/switch';
 import { Starfield, Mark } from '@/components/starfield';
 import { PreviewImage, SizePicker } from '@/components/card-preview';
 import { CARD_TEXT, COPY } from '@/lib/copy';
-import { appUrl, canvasToFile, downloadFile, emptyFields, renderCard, shareOrDownload, type CardFields, type Size } from '@/lib/cards';
+import { canvasToFile, downloadFile, emptyFields, renderCard, shareOrDownload, type CardFields, type Size } from '@/lib/cards';
 
 /**
  * Public, blank, no-sign-in I'm Stumped completion form.
- * Never reads or writes localStorage and never touches giver data; everything is in memory.
+ * Never accesses giver data/localStorage. An isolated tab draft survives reloads.
  */
 export default function CompletePage() {
-  const [vals, setVals] = useState<CardFields['stumped']>(emptyFields().stumped);
+  const [vals, setRawVals] = useState<CardFields['stumped']>(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('ow.complete-draft') ?? 'null');
+      if (saved && ['love', 'no', 'own', 'hint'].every(k => typeof saved[k] === 'string')) return saved;
+    } catch { /* Storage unavailable: keep the live form state. */ }
+    return emptyFields().stumped;
+  });
+  const setVals = (update: (previous: CardFields['stumped']) => CardFields['stumped']) =>
+    setRawVals(previous => {
+      const next = update(previous);
+      try { sessionStorage.setItem('ow.complete-draft', JSON.stringify(next)); } catch { /* Keep live answers. */ }
+      return next;
+    });
   const [size, setSize] = useState<Size>('portrait');
   const [made, setMade] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -28,10 +40,10 @@ export default function CompletePage() {
     fields: { ...emptyFields(), stumped: vals },
     omit: new Set<string>(),
     name: '',
-    showBudget: false,
     refusals: [vals.no],
     appName,
-    appUrl: appUrl(),
+    // Their own answers draw their own mini sky in the card corner (in memory only).
+    sky: { name: '', loves: [...vals.love.split(/[\n,;]+/), ...vals.hint.split(/[\n,;]+/)], refusals: vals.no.split(/[\n,;]+/) },
   });
 
   useEffect(() => {

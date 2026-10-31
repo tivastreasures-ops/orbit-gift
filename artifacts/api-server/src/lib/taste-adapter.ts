@@ -47,7 +47,7 @@ async function qloo(path: string, params: Record<string, string>) {
   return await response.json();
 }
 function normalize(e: QlooEntity): Entity {
-  return { id: e.entity_id, name: e.name, kind: e.types?.[0]?.replace("urn:entity:", "") ?? "entity" };
+  return { id: e.entity_id, name: e.name, kind: e.types?.[0]?.replace("urn:entity:", "") ?? "topic" };
 }
 export const qlooTaste: TasteAdapter = {
   async searchEntity(text, kind) {

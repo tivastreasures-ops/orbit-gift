@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Share2, Download, FileImage, Link2, Lock } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
+import { Share2, Download, FileImage, Link2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PreviewImage, SizePicker } from '@/components/card-preview';
+import { WorldPicker } from '@/components/sky-map';
 import { CARD_TEXT, COPY, NEED, TEMPLATE_NAMES } from '@/lib/copy';
 import {
+  ART_SLOTS,
   PURPOSE_TEMPLATES,
-  appUrl,
   canvasToFile,
   completionUrl,
   downloadFile,
@@ -20,10 +20,15 @@ import {
   type RenderOpts,
   type Size,
   type TemplateId,
+  type Version,
 } from '@/lib/cards';
-import { SHARE_PURPOSE_KEY, readKey, useData, writeKey } from '@/lib/store';
+import { PUBLIC_CARD_URL, QR_AVAILABLE } from '@/lib/public-url';
+import { chooseWorld, type WorldId } from '@/lib/sky';
+import { SHARE_PURPOSE_KEY, actions, readKey, useData, useDraft, writeKey } from '@/lib/store';
 
 const pad = (a: string[], n: number) => [...a, ...Array(Math.max(0, n - a.length)).fill('')].slice(0, n);
+const ALL_TEMPLATES: TemplateId[] = ['santa', 'wish', 'stumped', 'tot'];
+const HOME_PURPOSE: Record<TemplateId, Purpose> = { santa: 'list', wish: 'list', tot: 'list', stumped: 'ask' };
 
 function TextField({ label, value, onChange, testid }: { label: string; value: string; onChange: (v: string) => void; testid: string }) {
   return (
@@ -34,45 +39,94 @@ function TextField({ label, value, onChange, testid }: { label: string; value: s
   );
 }
 
+function PaperShelf({ current, version, purpose, onPick }: { current: TemplateId; version: Version; purpose: Purpose; onPick: (t: TemplateId, v: Version) => void }) {
+  return (
+    <div>
+      <p className="eyebrow mb-1">{COPY.share.shelf}</p>
+      <div className="shelf" role="radiogroup" aria-label={COPY.share.shelf} data-testid="shelf-paper">
+        {ALL_TEMPLATES.flatMap((t) =>
+          (['main', 'neutral'] as const).map((v) => {
+            const off = !PURPOSE_TEMPLATES[purpose].includes(t);
+            const checked = current === t && version === v;
+            const tag = v === 'main' ? COPY.share.pop : COPY.share.neutralName;
+            return (
+              <button
+                key={`${t}-${v}`}
+                type="button"
+                role="radio"
+                aria-checked={checked}
+                aria-label={`${TEMPLATE_NAMES[t]}, ${tag}${off ? `. ${COPY.share.otherPurpose}` : ''}`}
+                className="shelf-item"
+                data-off={off}
+                onClick={() => onPick(t, v)}
+                data-testid={`shelf-${t}-${v}`}
+              >
+                <img src={ART_SLOTS[t][v]} alt="" loading="lazy" />
+                <span className="block mt-1.5 px-0.5 font-display text-[0.78rem] leading-tight line-clamp-2">{TEMPLATE_NAMES[t]}</span>
+                <span className="block px-0.5 text-[0.65rem] tracking-[0.2em] uppercase opacity-70">{tag}</span>
+              </button>
+            );
+          }),
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function SharePage() {
-  const { recipients, chips, gifts, settings } = useData();
+  const { recipients, chips, gifts, settings, worlds } = useData();
   const { toast } = useToast();
   const [purpose, setPurpose] = useState<Purpose | null>(() => readKey<Purpose | null>(SHARE_PURPOSE_KEY, null));
-  const [template, setTemplate] = useState<TemplateId | null>(null);
-  const [source, setSource] = useState('');
-  const [fields, setFields] = useState<CardFields>(emptyFields);
-  const [showBudget, setShowBudget] = useState(false);
-  const [size, setSize] = useState<Size>('portrait');
+  const [template, setTemplate] = useDraft<TemplateId | null>('share-template', null);
+  const [prefer, setPrefer] = useDraft<Version>('share-paper', 'main');
+  const [source, setSource] = useDraft('share-source', '');
+  const [fields, setFields] = useDraft<CardFields>('share-fields', emptyFields());
+  const [dropped, setDropped] = useState(0);
+  const [size, setSize] = useDraft<Size>('share-size', 'portrait');
   const [omit, setOmit] = useState<Set<string>>(new Set());
+  const [localWorld, setLocalWorld] = useDraft<WorldId | null>('share-world', null);
   const [preview, setPreview] = useState<{ url: string; neutral: boolean } | null>(null);
   const [previewError, setPreviewError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [showQr, setShowQr] = useState(false);
 
   const recommended = purpose ? PURPOSE_TEMPLATES[purpose] : [];
   const t: TemplateId | null = template && recommended.includes(template) ? template : recommended[0] ?? null;
   const mode: Mode = purpose === 'ask' ? 'request' : 'filled';
+  const person = recipients.find((x) => x.id === source);
 
   const choosePurpose = (p: Purpose) => {
     setPurpose(p);
     writeKey(SHARE_PURPOSE_KEY, p);
     setTemplate(null);
     setOmit(new Set());
-    if (p === 'hint') setShowBudget(false);
+  };
+
+  const pickPaper = (nt: TemplateId, v: Version) => {
+    if (!purpose || !PURPOSE_TEMPLATES[purpose].includes(nt)) {
+      const p = HOME_PURPOSE[nt];
+      setPurpose(p);
+      writeKey(SHARE_PURPOSE_KEY, p);
+    }
+    setTemplate(nt);
+    setPrefer(v);
+    setOmit(new Set());
   };
 
   const prefill = (rid: string) => {
     setSource(rid);
     setOmit(new Set());
+    setDropped(0);
     if (!rid) return setFields(emptyFields());
     const r = recipients.find((x) => x.id === rid);
     if (!r) return;
     const loves = chips.filter((c) => c.recipientId === rid && c.type === 'love').map((c) => c.text);
     const nos = chips.filter((c) => c.recipientId === rid && c.type === 'refuse').map((c) => c.text);
     const saved = gifts.filter((g) => g.recipientId === rid && g.status === 'saved');
-    const hasBudget = r.budgetMax > 0 && r.budgetMax < 100000;
+    setDropped(Math.max(0, saved.length - 4));
     setFields({
-      santa: { loves: pad(loves, 3), nos: pad(nos, 3), budget: hasBudget ? `${r.budgetMin}–${r.budgetMax}` : '' },
-      wish: { wishes: [0, 1, 2, 3].map((i) => ({ wish: saved[i]?.title ?? '', because: saved[i]?.because ?? '' })) },
+      santa: { loves: pad(loves, 3), nos: pad(nos, 3) },
+      wish: { wishes: pad(saved.slice(0, 4).map((g) => g.title), 4) },
       stumped: emptyFields().stumped,
       tot: { yes: pad(loves, 7), no: pad(nos, 7) },
     });
@@ -86,6 +140,19 @@ export default function SharePage() {
     return out.filter((x) => x.trim());
   }, [source, chips, t, fields]);
 
+  // Typed card answers drive the mini sky, so it matches what is on the card.
+  const skyLoves = useMemo(() => {
+    if (source) return chips.filter((c) => c.recipientId === source && c.type === 'love').map((c) => c.text);
+    if (t === 'santa') return fields.santa.loves;
+    if (t === 'tot') return fields.tot.yes;
+    if (t === 'wish') return source ? chips.filter((c) => c.recipientId === source && c.type === 'love').map((c) => c.text) : fields.wish.wishes;
+    return [...fields.stumped.love.split(/[\n,;]+/), ...fields.stumped.hint.split(/[\n,;]+/)].filter((s) => s.trim());
+  }, [t, fields, source, chips]);
+  const skyName = person?.name ?? '';
+  const autoWorld = chooseWorld(skyLoves.filter((x) => x.trim()), skyName);
+  const chosenWorld = source ? worlds[source] ?? null : localWorld;
+  const setWorld = (w: WorldId | null) => (source ? actions.setWorld(source, w) : setLocalWorld(w));
+
   const opts: RenderOpts | null = useMemo(
     () =>
       t
@@ -97,14 +164,14 @@ export default function SharePage() {
             fields,
             omit,
             name: '',
-            showBudget: purpose === 'list' && showBudget,
             refusals,
             appName: settings.appName,
-            appUrl: appUrl(),
-            completionUrl: completionUrl(),
+            prefer,
+            showQr,
+            sky: { name: skyName, loves: skyLoves, refusals, world: chosenWorld },
           }
         : null,
-    [t, purpose, mode, size, fields, omit, showBudget, refusals, settings.appName],
+    [t, purpose, mode, size, fields, omit, refusals, settings.appName, prefer, skyName, skyLoves, chosenWorld, showQr],
   );
 
   useEffect(() => {
@@ -149,7 +216,8 @@ export default function SharePage() {
   };
 
   const sendLink = async () => {
-    const url = completionUrl();
+    // Prefer the verified public URL; the in-app link is only for this device's share sheet, never printed on a card.
+    const url = PUBLIC_CARD_URL ? `${PUBLIC_CARD_URL}/complete?template=stumped` : completionUrl();
     const nav = navigator as Navigator;
     if (nav.share) {
       try {
@@ -167,7 +235,7 @@ export default function SharePage() {
     }
   };
 
-  const entries = t ? entryList(t, fields, purpose === 'list' && showBudget) : [];
+  const entries = t ? entryList(t, fields) : [];
   const toggleOmit = (k: string) =>
     setOmit((o) => {
       const n = new Set(o);
@@ -183,6 +251,7 @@ export default function SharePage() {
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-8 sm:pt-12 pb-6">
       <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight enter" data-testid="text-share-question">{COPY.share.question}</h1>
+      <p className="mt-3 text-lg text-gold/90 font-display enter" style={{ ['--i' as string]: 1 }} data-testid="text-share-constellation">{COPY.share.constellationLine}</p>
       <div className="mt-6 grid sm:grid-cols-3 gap-3" role="radiogroup">
         {COPY.share.options.map((o, i) => (
           <button
@@ -207,20 +276,12 @@ export default function SharePage() {
       {purpose && t && (
         <div className="mt-10 grid lg:grid-cols-[1fr_440px] gap-8 items-start">
           <div className="space-y-7 min-w-0">
-            {recommended.length > 1 && (
-              <div className="flex flex-wrap gap-2" role="radiogroup">
-                {recommended.map((id) => (
-                  <button key={id} type="button" role="radio" aria-checked={t === id} className="pill" onClick={() => { setTemplate(id); setOmit(new Set()); }} data-testid={`option-template-${id}`}>
-                    {TEMPLATE_NAMES[id]}
-                  </button>
-                ))}
-              </div>
-            )}
-            {recommended.length === 1 && <p className="font-display text-xl text-gold" data-testid="text-template-name">{TEMPLATE_NAMES[t]}</p>}
+            <PaperShelf current={t} version={prefer} purpose={purpose} onPick={pickPaper} />
+            <p className="font-display text-xl text-gold" data-testid="text-template-name">{TEMPLATE_NAMES[t]}</p>
 
             {mode === 'filled' && (
               <label className="block">
-                <span className="block text-sm mb-1.5 copy-needed">{NEED('label: fill from a saved profile or start blank')}</span>
+                <span className="block text-sm mb-1.5">{NEED('label: fill from a saved profile or start blank')}</span>
                 <select className="field" value={source} onChange={(e) => prefill(e.target.value)} data-testid="select-source">
                   <option value="">{NEED('option: start blank')}</option>
                   {recipients.map((r) => (
@@ -230,24 +291,20 @@ export default function SharePage() {
               </label>
             )}
 
-
             {mode === 'filled' && t === 'santa' && (
               <div className="glass rounded-3xl p-5 space-y-4">
                 <p className="font-display text-lg">{CARD_TEXT.santa.loves}</p>
                 <div className="grid gap-2">{fields.santa.loves.map((v, i) => <TextField key={i} label={`${i + 1}`} value={v} onChange={(x) => setSanta({ loves: setArr(fields.santa.loves, i, x) })} testid={`input-santa-love-${i}`} />)}</div>
                 <p className="font-display text-lg pt-2">{CARD_TEXT.santa.nos}</p>
                 <div className="grid gap-2">{fields.santa.nos.map((v, i) => <TextField key={i} label={`${i + 1}`} value={v} onChange={(x) => setSanta({ nos: setArr(fields.santa.nos, i, x) })} testid={`input-santa-no-${i}`} />)}</div>
-                <TextField label={CARD_TEXT.santa.budget} value={fields.santa.budget} onChange={(x) => setSanta({ budget: x })} testid="input-santa-budget" />
               </div>
             )}
             {mode === 'filled' && t === 'wish' && (
-              <div className="glass rounded-3xl p-5 space-y-4">
+              <div className="glass rounded-3xl p-5 space-y-3">
                 {fields.wish.wishes.map((w, i) => (
-                  <div key={i} className="grid gap-2">
-                    <TextField label={`${i + 1}`} value={w.wish} onChange={(x) => setFields((f) => ({ ...f, wish: { wishes: f.wish.wishes.map((y, j) => (j === i ? { ...y, wish: x } : y)) } }))} testid={`input-wish-${i}`} />
-                    <TextField label={CARD_TEXT.wish.because} value={w.because} onChange={(x) => setFields((f) => ({ ...f, wish: { wishes: f.wish.wishes.map((y, j) => (j === i ? { ...y, because: x } : y)) } }))} testid={`input-wish-because-${i}`} />
-                  </div>
+                  <TextField key={i} label={`${i + 1}`} value={w} onChange={(x) => setFields((f) => ({ ...f, wish: { wishes: setArr(f.wish.wishes, i, x) } }))} testid={`input-wish-${i}`} />
                 ))}
+                {dropped > 0 && <p className="text-xs text-muted-foreground" role="status" data-testid="text-wishes-dropped">{COPY.share.wishesDropped(dropped)}</p>}
               </div>
             )}
             {mode === 'filled' && t === 'tot' && (
@@ -261,19 +318,6 @@ export default function SharePage() {
                   {fields.tot.no.map((v, i) => <TextField key={i} label={`${i + 1}`} value={v} onChange={(x) => setTot({ no: setArr(fields.tot.no, i, x) })} testid={`input-tot-no-${i}`} />)}
                 </div>
               </div>
-            )}
-
-            {purpose === 'hint' && (
-              <p className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="text-budget-locked">
-                <Lock className="w-4 h-4 text-gold" />
-                {COPY.share.budgetLocked}
-              </p>
-            )}
-            {purpose === 'list' && t === 'santa' && (
-              <label className="flex items-center justify-between gap-4 glass rounded-2xl px-5 py-3 cursor-pointer">
-                <span className="font-medium">{COPY.share.budgetToggle}</span>
-                <Switch checked={showBudget} onCheckedChange={setShowBudget} data-testid="switch-show-budget" />
-              </label>
             )}
 
             {mode === 'filled' && entries.length > 0 && (
@@ -290,35 +334,40 @@ export default function SharePage() {
             )}
           </div>
 
-          <div className="lg:sticky lg:top-6 space-y-4">
-            <div className="flex justify-center"><SizePicker size={size} onChange={setSize} /></div>
-            <PreviewImage url={preview?.url ?? null} size={size} alt={TEMPLATE_NAMES[t]} />
-            {previewError && <p className="text-sm text-center text-violet" role="alert" data-testid="text-preview-error">{COPY.errors.broke}</p>}
-            {preview?.neutral && (
-              <p className="text-sm text-center text-violet" role="status" data-testid="text-neutral-note">{COPY.share.neutral}</p>
-            )}
-            {mode === 'request' && (
-              <p className="text-xs text-center text-muted-foreground break-all" data-testid="text-completion-url">{completionUrl()}</p>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" className="btn btn-gold" disabled={busy} onClick={() => void exportCard(mode, 'share')} data-testid="button-share-card">
-                <Share2 className="w-4 h-4" />
-                <span>{COPY.share.share}</span>
-              </button>
-              <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => void exportCard(mode, 'download')} data-testid="button-download-card">
-                <Download className="w-4 h-4" />
-                <span>{COPY.share.download}</span>
-              </button>
-              <button type="button" className="btn btn-ghost col-span-2" disabled={busy} onClick={() => void exportCard('blank', 'download')} data-testid="button-download-blank">
-                <FileImage className="w-4 h-4" />
-                <span>{COPY.share.blank}</span>
-              </button>
-              {mode === 'request' && (
-                <button type="button" className="btn btn-ghost col-span-2" onClick={() => void sendLink()} data-testid="button-send-link">
-                  <Link2 className="w-4 h-4" />
-                  <span className="copy-needed !text-current">{NEED('button: send fillable completion link')}</span>
-                </button>
+          <div className="lg:sticky lg:top-6">
+            <div className="paper-plate space-y-4 !p-4" data-testid="panel-share-paper">
+              <div className="flex justify-center"><SizePicker size={size} onChange={setSize} /></div>
+              <PreviewImage url={preview?.url ?? null} size={size} alt={TEMPLATE_NAMES[t]} />
+              {mode === 'filled' && <WorldPicker value={chosenWorld} auto={autoWorld} onChange={setWorld} />}
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={showQr} onChange={e => setShowQr(e.target.checked)}
+                  disabled={!QR_AVAILABLE} data-testid="toggle-qr" />
+                QR code
+              </label>
+              {previewError && <p className="text-sm text-center paper-ink" role="alert" data-testid="text-preview-error">{COPY.errors.broke}</p>}
+              {preview?.neutral && (
+                <p className="text-sm text-center paper-ink" role="status" data-testid="text-neutral-note">{COPY.share.neutral}</p>
               )}
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" className="btn btn-gold" disabled={busy} onClick={() => void exportCard(mode, 'share')} data-testid="button-share-card">
+                  <Share2 className="w-4 h-4" />
+                  <span>{COPY.share.share}</span>
+                </button>
+                <button type="button" className="btn btn-ghost !bg-[hsl(234_40%_14%)] !text-[hsl(40_50%_92%)]" disabled={busy} onClick={() => void exportCard(mode, 'download')} data-testid="button-download-card">
+                  <Download className="w-4 h-4" />
+                  <span>{COPY.share.download}</span>
+                </button>
+                <button type="button" className="btn btn-ghost col-span-2 !bg-[hsl(234_40%_14%)] !text-[hsl(40_50%_92%)]" disabled={busy} onClick={() => void exportCard('blank', 'download')} data-testid="button-download-blank">
+                  <FileImage className="w-4 h-4" />
+                  <span>{COPY.share.blank}</span>
+                </button>
+                {mode === 'request' && (
+                  <button type="button" className="btn btn-ghost col-span-2 !bg-[hsl(234_40%_14%)] !text-[hsl(40_50%_92%)]" onClick={() => void sendLink()} data-testid="button-send-link">
+                    <Link2 className="w-4 h-4" />
+                    <span>{NEED('button: send fillable completion link')}</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

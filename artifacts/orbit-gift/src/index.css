@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600&family=DM+Sans:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600&family=DM+Sans:wght@400;500&family=Caveat:wght@500;600&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -289,3 +289,25 @@ body .font-semibold, body .font-bold { font-weight: 500; }
 .source-chip-btn:hover { border-color: hsl(var(--violet) / 0.8); }
 .source-chip-btn[aria-pressed='true'] { color: hsl(46 90% 84%); border-color: hsl(var(--gold)); background: hsl(42 60% 46% / 0.18); }
 .card-selected { border-color: hsl(var(--gold) / 0.7) !important; }
+
+/* ---- Warm paper plate around the sky (results + share) ---- */
+.paper-plate {
+  position: relative; border-radius: 1.75rem; padding: 10px;
+  background: linear-gradient(160deg, hsl(40 52% 90%), hsl(36 44% 82%) 60%, hsl(32 40% 76%));
+  box-shadow: 0 0 0 1px hsl(42 60% 58% / 0.7), 0 30px 60px -28px hsl(234 70% 2% / 0.9);
+}
+.paper-plate::after { content: ''; position: absolute; inset: 5px; border-radius: 1.45rem; border: 1px solid hsl(40 62% 48% / 0.55); pointer-events: none; }
+.paper-plate > .sky-well { border-radius: 1.3rem; overflow: hidden; background: radial-gradient(120% 90% at 50% 40%, hsl(236 46% 14%), hsl(234 52% 7%)); padding: 0.75rem 0.5rem 0.5rem; }
+.paper-ink { color: hsl(28 30% 22%); }
+.paper-tab { font-family: var(--app-font-serif); font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase; color: hsl(30 40% 30%); }
+.world-swatch { width: 1.6rem; height: 1.6rem; border-radius: 9999px; box-shadow: inset -4px -5px 8px hsl(234 60% 6% / 0.55); }
+.world-pill[aria-checked='true'] { outline: 2px solid hsl(40 62% 48%); outline-offset: 2px; }
+.shelf { display: flex; gap: 0.9rem; overflow-x: auto; scroll-snap-type: x mandatory; padding: 0.5rem 0.25rem 1rem; }
+.shelf-item { scroll-snap-align: start; flex: 0 0 auto; width: 132px; text-align: left; border-radius: 0.9rem; padding: 6px; background: hsl(40 46% 88%); color: hsl(28 30% 22%); box-shadow: 0 10px 22px -14px hsl(234 70% 2% / 0.9); transition: transform .2s; }
+.shelf-item:hover { transform: translateY(-2px); }
+.shelf-item[aria-checked='true'] { box-shadow: 0 0 0 2px hsl(var(--gold)), 0 14px 30px -14px hsl(42 80% 40% / 0.8); }
+.shelf-item[data-off='true'] { opacity: 0.55; }
+.shelf-item img { width: 100%; aspect-ratio: 1080/1350; object-fit: cover; border-radius: 0.55rem; background: hsl(36 30% 80%); }
+.sky-glow { animation: skyglow 6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes skyglow { 0%,100% { opacity: .75 } 50% { opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { .sky-glow { animation: none; } }

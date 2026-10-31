@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { normal, refusalTerms } from "./rules";
 import type { ClaudeSession } from "./llm";
+import { recordFormatFailure } from "./tool-contracts";
 import { cacheKey, TasteCache } from "./taste-cache";
 
 const resultSchema = z.object({ refusals: z.array(z.object({
@@ -36,6 +37,8 @@ export class RefusalExpander {
     }));
     return { terms: [...new Set(rows.flat())], hits };
     } catch (error) {
+      if (error instanceof z.ZodError) recordFormatFailure(claude, "refusals", 1,
+        error.issues.map(i => `${i.path.join(".")}: ${i.message}`));
       // Preserve every literal refusal and all deterministic aliases. A helper
       // outage never disables the mandatory code check or invents preferences.
       console.warn("Refusal expansion failed; retaining strict original/known-alias checks:", error instanceof Error ? error.message : String(error));

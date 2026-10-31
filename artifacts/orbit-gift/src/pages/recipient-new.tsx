@@ -1,9 +1,8 @@
-import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { ArrowRight } from 'lucide-react';
 import { FlowHeader } from '@/components/flow-header';
 import { COPY, NEED } from '@/lib/copy';
-import { actions } from '@/lib/store';
+import { actions, useDraft } from '@/lib/store';
 
 function Group({ label, options, value, onChange, id }: { label: string; options: string[]; value: string; onChange: (v: string) => void; id: string }) {
   return (
@@ -22,11 +21,11 @@ function Group({ label, options, value, onChange, id }: { label: string; options
 
 export default function RecipientNew() {
   const [, setLocation] = useLocation();
-  const [name, setName] = useState('');
-  const [relationship, setRelationship] = useState('');
-  const [occasion, setOccasion] = useState('');
-  const [min, setMin] = useState('');
-  const [max, setMax] = useState('');
+  const [name, setName, clearName] = useDraft<string>('new.name', '');
+  const [relationship, setRelationship, clearRelationship] = useDraft<string>('new.relationship', '');
+  const [occasion, setOccasion, clearOccasion] = useDraft<string>('new.occasion', '');
+  const [min, setMin, clearMin] = useDraft<string>('new.min', '');
+  const [max, setMax, clearMax] = useDraft<string>('new.max', '');
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +33,7 @@ export default function RecipientNew() {
     const lo = Math.max(0, Math.min(100000, Number(min) || 0));
     const hiRaw = Number(max) || 0;
     const hi = Math.min(100000, hiRaw ? Math.max(hiRaw, lo) : 100000);
+    [clearName, clearRelationship, clearOccasion, clearMin, clearMax].forEach((c) => c());
     const id = actions.addRecipient({ name: name.trim().slice(0, 100), relationship, occasion, budgetMin: lo, budgetMax: hi, owned: '' });
     setLocation(`/recipient/${id}/love`);
   };

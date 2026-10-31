@@ -1,9 +1,26 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { readFileSync } from 'node:fs';
 import { resolveSources } from './sources';
 import { CX, CY, giftAngle, giftRoute, loveArcs, lovePoints } from '../components/starfield';
 
 const loves = [{ id: 'tea', text: 'Earl Grey' }, { id: 'food', text: 'German food' }, { id: 'letter', text: 'X' }];
+test('all template text boxes stay clear of the reserved personal-sky corner', () => {
+  const layouts = JSON.parse(readFileSync(new URL('./card-slots.json', import.meta.url), 'utf8')).templates;
+  for (const [name, layout] of Object.entries(layouts) as [string, any][]) {
+    const c = layout.reserved.constellation;
+    for (const s of layout.slots) {
+      const overlap = s.x < c.x + c.w && s.x + s.w > c.x && s.y < c.y + c.h && s.y + s.h > c.y;
+      assert.equal(overlap, false, `${name}/${s.id} covers the personal sky`);
+    }
+  }
+});
+test('same name/loves seed produces identical device and card stars regardless of local ids', () => {
+  const device = lovePoints(loves, 12345).map(({ id: _id, ...point }) => point);
+  const card = lovePoints(loves.map((l, i) => ({ ...l, id: `l${i}` })), 12345).map(({ id: _id, ...point }) => point);
+  assert.deepEqual(device, card);
+  assert.notDeepEqual(device, lovePoints(loves, 98765).map(({ id: _id, ...point }) => point));
+});
 test('explicit one/two sources resolve only to exact current loves', () => {
   assert.deepEqual(resolveSources({ because: '', sourceLoves: ['earl grey', 'German food'] }, loves), { ids: ['tea', 'food'], names: ['Earl Grey', 'German food'] });
   assert.equal(resolveSources({ because: 'Earl Grey', sourceLoves: ['Earl Grey', 'unknown'] }, loves), null);

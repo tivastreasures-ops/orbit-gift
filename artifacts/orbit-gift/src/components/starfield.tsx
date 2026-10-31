@@ -9,7 +9,7 @@ function rand(seed: number) {
 }
 
 /** Stable 32-bit string hash (FNV-1a). */
-function hash(str: string) {
+export function hash(str: string) {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) {
     h ^= str.charCodeAt(i);
@@ -77,15 +77,18 @@ export interface OrbitGift { id: string; loveId: string | null; saved?: boolean 
 
 export type Pt = { id: string; x: number; y: number; a: number; k: number; r: number; gold: boolean };
 
-export function lovePoints(loves: OrbitLove[]): Pt[] {
+export function lovePoints(loves: OrbitLove[], seed = 0): Pt[] {
+  // Seed (name + loves) rotates and jitters the whole pattern so every person gets their own sky.
+  const rot = seed ? ((seed % 6283) / 1000) : 0;
   return loves
     .map((l, index) => {
-      const h = hash(`${l.id}|${l.text}`);
+      // Device-local chip ids must not change the same person's card pattern.
+      const h = hash(l.text.trim().toLowerCase());
       // A golden-angle sequence spreads each new love around the whole orbit.
       // Unlike random angles it cannot put most of a small constellation in
       // one corner; appending a chip leaves existing positions unchanged.
-      const a = (index * 2.399963229728653 - Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
-      const k = 0.94 + (((h >>> 12) % 100) / 100) * 0.16;
+      const a = (index * 2.399963229728653 - Math.PI / 2 + rot + Math.PI * 4) % (Math.PI * 2);
+      const k = 0.94 + ((((h ^ seed) >>> 12) % 100) / 100) * 0.16;
       const p = onRing(a, k);
       return { id: l.id, x: p.x, y: p.y, a, k, r: 2.2 + ((h >>> 20) % 10) / 10, gold: (h >>> 8) % 3 === 0 };
     })

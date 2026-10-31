@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 import { chromium } from "playwright";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 // This is an operator/test runner, not an app route. Review rendering explicitly
@@ -24,26 +24,28 @@ const origin = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV
 const browser = await chromium.launch({ executablePath: "/repl/tools/bin/chromium", args: ["--no-sandbox", "--disable-dev-shm-usage"] });
 const page = await browser.newPage({ viewport: { width: 1200, height: 1000 }, ignoreHTTPSErrors: true });
 const report: unknown[] = [];
+const onlyTemplate = process.argv[2];
 try {
   await page.goto(`${origin}/share`, { waitUntil: "networkidle" });
   await page.evaluate(async () => { await document.fonts.ready; });
   for (const profile of profiles) {
-    for (const template of ["santa", "wish", "stumped", "tot"]) {
+    for (const template of ["santa", "wish", "stumped", "tot"].filter(t => !onlyTemplate || t === onlyTemplate)) {
       for (const version of ["main", "neutral"]) {
         const result = await page.evaluate(async ({ profile, template, version, origin, long }) => {
           // Vite dev import runs the ACTUAL browser renderer, not a reimplementation.
           const moduleUrl = "/src/lib/cards.ts";
           const m = await import(/* @vite-ignore */ moduleUrl);
           const f = m.emptyFields();
-          f.santa = { loves: profile.input.loves.slice(0, 3), nos: profile.input.refusals.slice(0, 3), budget: `$${profile.input.budgetMin}–$${profile.input.budgetMax}` };
-          f.wish = { wishes: profile.input.loves.slice(0, 4).map((wish: string, i: number) => ({ wish, because: profile.input.loves[(i + 1) % profile.input.loves.length] })) };
+          f.santa = { loves: profile.input.loves.slice(0, 3), nos: profile.input.refusals.slice(0, 3) };
+          f.wish = { wishes: profile.input.loves.slice(0, 4) };
           f.tot = { yes: [...profile.input.loves], no: [...profile.input.refusals] };
           f.stumped = { love: profile.input.loves.join("\n"), no: profile.input.refusals.join("\n"), own: profile.input.owned, hint: profile.input.loves.at(-1) || "" };
           const opts = {
             template, purpose: template === "stumped" ? "ask" : "list", mode: "filled", size: "portrait",
-            fields: f, omit: new Set<string>(), name: profile.name, showBudget: true,
-            refusals: profile.input.refusals, appName: "Orbit & Wonder", appUrl: origin,
-            completionUrl: `${origin}/complete?template=stumped`,
+            fields: f, omit: new Set<string>(), name: profile.name,
+            refusals: profile.input.refusals, appName: "Orbit & Wonder",
+            publicUrl: "https://example.org",
+            sky: { name: profile.name, loves: profile.input.loves, refusals: profile.input.refusals, world: "ocean" },
           };
           const portrait = await m.renderReviewCard(opts, version);
           const square = await m.renderReviewCard({ ...opts, size: "square" }, version);
@@ -61,11 +63,13 @@ try {
           if (!containedExactly) failures.push("Square does not contain the whole portrait exactly");
           if (portrait.canvas.width !== 1080 || portrait.canvas.height !== 1350 || square.canvas.width !== 1080 || square.canvas.height !== 1080) failures.push("Wrong export dimensions");
           if (portrait.diagnostics.some((d: any) => !d.inside) || square.diagnostics.some((d: any) => !d.inside)) failures.push("Measured glyph ink outside a slot");
-          if ("budget" in hint || "budget-label" in hint) failures.push("Budget leaked into Drop a hint");
+          if (Object.keys(values).some(k => /budget|because/.test(k))) failures.push("Removed budget/Because slot remains");
           if (blank.link !== "Print it, write on it, send a photo back.") failures.push("Blank-PNG line mismatch");
-          if (request.link !== `Fill it in at ${origin}/complete?template=stumped`) failures.push("Completion link mismatch");
+          if (!request.link?.includes("example.org/complete")) failures.push("Completion link mismatch");
           if (template === "tot" && profile.name === "Wolfboy" && values["yes-7"] !== "turquoise") failures.push("Seventh love missing");
-          if (template === "stumped" && values.request !== "I want to get you something you'll actually love. Tell me what you love, what you absolutely don't want, and what you already own. Then send your answers back to me!") failures.push("Request copy mismatch");
+          if (template === "stumped" && values.request?.includes("Then send your answers back to me!")) failures.push("Blank-only intro leaked into filled card");
+          if (Object.values(values).some((v: any) => typeof v === "string" && v.includes("replit.dev"))) failures.push("Development link printed on card");
+          if (template === "wish" && portrait.diagnostics.some((d: any) => /^wish-/.test(d.slotId) && d.lines?.length > 1)) failures.push("Wish wrapped to more than one line");
           if (profile.name === "Long text stress" && !portrait.diagnostics.some((d: any) => d.ellipsis)) failures.push("Stress case did not exercise ellipsis");
           // Refused colour selection is tested independently of forced QA versions.
           for (const colour of ["pink", "red", "green", "orange", "teal", "burgundy"]) {
@@ -88,6 +92,24 @@ try {
     }
   }
   // Exercise a real native PNG-download event using the app's unchanged helper.
+  await page.evaluate(async () => {
+    const moduleUrl = "/src/lib/cards.ts";
+    const m = await import(/* @vite-ignore */ moduleUrl);
+    const fields = m.emptyFields();
+    const opts = { template: "stumped", purpose: "ask", mode: "blank", size: "portrait",
+      fields, omit: new Set<string>(), name: "", refusals: [], appName: "Orbit & Wonder",
+      publicUrl: "https://example.org", showQr: true,
+      sky: { name: "QA", loves: ["tea", "jazz"], refusals: [] } };
+    const rendered = await m.renderReviewCard(opts, "neutral");
+    if (rendered.diagnostics.some((d: any) => !d.inside)) throw new Error("Blank/QR export overflow");
+    const blank = m.slotValues(opts);
+    if (!blank.request.includes("Then send your answers back to me!")) throw new Error("Blank intro missing");
+    const noDev = m.slotValues({ ...opts, publicUrl: "https://private.replit.dev" });
+    if (Object.values(noDev).some((v: any) => v.includes("replit.dev"))) throw new Error("Explicit dev link bypassed guard");
+    const genUrl = "/src/lib/gen-request.ts";
+    const gen = await import(/* @vite-ignore */ genUrl);
+    if (!gen.isTransient(new gen.GenTimeout())) throw new Error("Timeout must receive one automatic retry");
+  });
   const downloadEvent = page.waitForEvent("download");
   await page.evaluate(async () => {
     const moduleUrl = "/src/lib/cards.ts"; const m = await import(/* @vite-ignore */ moduleUrl);
@@ -96,8 +118,15 @@ try {
   });
   const download = await downloadEvent;
   if (download.suggestedFilename() !== "download-contract.png") throw new Error("Native download filename mismatch");
-  await writeFile(new URL("qa-report.json", out), JSON.stringify({ cases: report.length, nativeDownload: true, results: report }, null, 2));
-  const failed = report.filter((r: any) => r.failures.length);
-  console.log(`${report.length} exported PNG cases; ${failed.length} failures. Output: ${fileURLToPath(out)}`);
+  let combined: any[] = report;
+  if (onlyTemplate) {
+    try {
+      const old = JSON.parse(await readFile(new URL("qa-report.json", out), "utf8"));
+      combined = [...old.results.filter((r: any) => r.template !== onlyTemplate), ...report];
+    } catch { /* A standalone targeted run has no earlier cases to merge. */ }
+  }
+  await writeFile(new URL("qa-report.json", out), JSON.stringify({ cases: combined.length, nativeDownload: true, results: combined }, null, 2));
+  const failed = combined.filter((r: any) => r.failures.length);
+  console.log(`${combined.length} exported PNG cases verified (${report.length} this run); ${failed.length} failures. Output: ${fileURLToPath(out)}`);
   if (failed.length) process.exitCode = 1;
 } finally { await browser.close(); }

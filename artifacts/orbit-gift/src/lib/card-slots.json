@@ -7,8 +7,11 @@
  "rules": {
   "fit": "Each slot is a box (x, y, w, h). Draw text inside it: start at the given maxFont, shrink to minFont, then wrap to maxLines, then end with an ellipsis. Never draw outside the box.",
   "align": "left unless the slot says center",
-  "font": "Josefin Sans for title/heading/label slots, DM Sans for entries and footer",
-  "square": "1080x1080 export = the whole portrait card scaled to fit, centered on the app's starry background. Never crop."
+  "font": "Josefin Sans for title/heading/label slots (code-drawn unless the layout sets paintedTitles), Caveat for typed entries, DM Sans for opening/request/link/footer",
+  "square": "1080x1080 export = the whole portrait card scaled to fit, centered on the app's starry background. Never crop.",
+  "reserved": "Every layout reserves 'constellation' (bottom-right mini sky) and 'strip' (bottom link/QR/footer row). No text slot may overlap the constellation box; only footer/QR may sit in the strip.",
+  "swap": "One slots entry per layout, shared by POP (main) and Neutral art. Replace art by dropping new PNGs with the same filenames; set paintedTitles true if the new art paints its own titles/labels.",
+  "empty": "Entry slots with a 'prompt' show it faintly when the answer is empty; blank exports draw light ruled lines instead."
  },
  "templates": {
   "secret-santa": {
@@ -60,7 +63,8 @@
      "h": 46,
      "maxFont": 34,
      "minFont": 22,
-     "maxLines": 1
+     "maxLines": 1,
+     "prompt": "Something I'd love"
     },
     {
      "id": "love-2",
@@ -70,7 +74,8 @@
      "h": 46,
      "maxFont": 34,
      "minFont": 22,
-     "maxLines": 1
+     "maxLines": 1,
+     "prompt": "Something I'd love"
     },
     {
      "id": "love-3",
@@ -80,7 +85,8 @@
      "h": 46,
      "maxFont": 34,
      "minFont": 22,
-     "maxLines": 1
+     "maxLines": 1,
+     "prompt": "Something I'd love"
     },
     {
      "id": "nos-label",
@@ -101,7 +107,8 @@
      "h": 44,
      "maxFont": 34,
      "minFont": 22,
-     "maxLines": 1
+     "maxLines": 1,
+     "prompt": "Something I'd rather not get"
     },
     {
      "id": "no-2",
@@ -111,7 +118,8 @@
      "h": 44,
      "maxFont": 34,
      "minFont": 22,
-     "maxLines": 1
+     "maxLines": 1,
+     "prompt": "Something I'd rather not get"
     },
     {
      "id": "no-3",
@@ -121,41 +129,36 @@
      "h": 44,
      "maxFont": 34,
      "minFont": 22,
-     "maxLines": 1
-    },
-    {
-     "id": "budget-label",
-     "x": 236,
-     "y": 976,
-     "w": 640,
-     "h": 30,
-     "maxFont": 24,
-     "minFont": 18,
      "maxLines": 1,
-     "text": "My gift budget"
-    },
-    {
-     "id": "budget",
-     "x": 236,
-     "y": 1010,
-     "w": 642,
-     "h": 42,
-     "maxFont": 34,
-     "minFont": 22,
-     "maxLines": 1
+     "prompt": "Something I'd rather not get"
     },
     {
      "id": "footer",
      "x": 40,
-     "y": 1312,
-     "w": 950,
+     "y": 1310,
+     "w": 860,
      "h": 56,
      "maxFont": 26,
      "minFont": 18,
      "maxLines": 1,
-     "text": "Made with Orbit & Wonder \u00b7 [APP URL]"
+     "text": "Made with Orbit & Wonder [ · short public link, only when verified]"
     }
-   ]
+   ],
+   "paintedTitles": false,
+   "reserved": {
+    "constellation": {
+     "x": 920,
+     "y": 1196,
+     "w": 170,
+     "h": 170
+    },
+    "strip": {
+     "x": 40,
+     "y": 1300,
+     "w": 860,
+     "h": 70
+    }
+   }
   },
   "all-i-want": {
    "images": {
@@ -195,18 +198,8 @@
      "h": 58,
      "maxFont": 38,
      "minFont": 24,
-     "maxLines": 1
-    },
-    {
-     "id": "because-1",
-     "x": 280,
-     "y": 499,
-     "w": 625,
-     "h": 50,
-     "maxFont": 24,
-     "minFont": 18,
-     "maxLines": 2,
-     "prefix": "Because... "
+     "maxLines": 1,
+     "prompt": "A wish"
     },
     {
      "id": "wish-2",
@@ -216,18 +209,8 @@
      "h": 58,
      "maxFont": 38,
      "minFont": 24,
-     "maxLines": 1
-    },
-    {
-     "id": "because-2",
-     "x": 280,
-     "y": 693,
-     "w": 625,
-     "h": 50,
-     "maxFont": 24,
-     "minFont": 18,
-     "maxLines": 2,
-     "prefix": "Because... "
+     "maxLines": 1,
+     "prompt": "A wish"
     },
     {
      "id": "wish-3",
@@ -237,18 +220,8 @@
      "h": 58,
      "maxFont": 38,
      "minFont": 24,
-     "maxLines": 1
-    },
-    {
-     "id": "because-3",
-     "x": 280,
-     "y": 890,
-     "w": 625,
-     "h": 50,
-     "maxFont": 24,
-     "minFont": 18,
-     "maxLines": 2,
-     "prefix": "Because... "
+     "maxLines": 1,
+     "prompt": "A wish"
     },
     {
      "id": "wish-4",
@@ -258,31 +231,36 @@
      "h": 58,
      "maxFont": 38,
      "minFont": 24,
-     "maxLines": 1
-    },
-    {
-     "id": "because-4",
-     "x": 280,
-     "y": 1083,
-     "w": 625,
-     "h": 50,
-     "maxFont": 24,
-     "minFont": 18,
-     "maxLines": 2,
-     "prefix": "Because... "
+     "maxLines": 1,
+     "prompt": "A wish"
     },
     {
      "id": "footer",
      "x": 60,
-     "y": 1300,
-     "w": 760,
+     "y": 1304,
+     "w": 800,
      "h": 50,
      "maxFont": 26,
      "minFont": 18,
      "maxLines": 1,
-     "text": "Made with Orbit & Wonder \u00b7 [APP URL]"
+     "text": "Made with Orbit & Wonder [ · short public link, only when verified]"
     }
-   ]
+   ],
+   "paintedTitles": false,
+   "reserved": {
+    "constellation": {
+     "x": 920,
+     "y": 1196,
+     "w": 170,
+     "h": 170
+    },
+    "strip": {
+     "x": 40,
+     "y": 1300,
+     "w": 860,
+     "h": 70
+    }
+   }
   },
   "im-stumped": {
    "images": {
@@ -333,7 +311,8 @@
      "h": 200,
      "maxFont": 30,
      "minFont": 20,
-     "maxLines": 5
+     "maxLines": 5,
+     "prompt": "Things I love"
     },
     {
      "id": "q2-label",
@@ -354,7 +333,8 @@
      "h": 185,
      "maxFont": 30,
      "minFont": 20,
-     "maxLines": 5
+     "maxLines": 5,
+     "prompt": "Absolutely not"
     },
     {
      "id": "q3-label",
@@ -375,7 +355,8 @@
      "h": 205,
      "maxFont": 30,
      "minFont": 20,
-     "maxLines": 5
+     "maxLines": 5,
+     "prompt": "Things I already own"
     },
     {
      "id": "q4-label",
@@ -396,32 +377,48 @@
      "h": 195,
      "maxFont": 30,
      "minFont": 20,
-     "maxLines": 5
+     "maxLines": 5,
+     "prompt": "One little hint"
     },
     {
      "id": "link",
      "x": 40,
-     "y": 1190,
-     "w": 1050,
+     "y": 1240,
+     "w": 860,
      "h": 50,
      "align": "center",
      "maxFont": 28,
      "minFont": 18,
      "maxLines": 1,
-     "text": "Fill it in at [COMPLETION URL]  (blank PNG: 'Print it, write on it, send a photo back.')"
+     "text": "Fill it in at [PUBLIC URL]/complete (only when a verified public URL exists). Blank PNG: 'Print it, write on it, send a photo back.'"
     },
     {
      "id": "footer",
      "x": 40,
-     "y": 1300,
-     "w": 900,
+     "y": 1306,
+     "w": 860,
      "h": 56,
      "maxFont": 26,
      "minFont": 18,
      "maxLines": 1,
-     "text": "Made with Orbit & Wonder \u00b7 [APP URL]"
+     "text": "Made with Orbit & Wonder [ · short public link, only when verified]"
     }
-   ]
+   ],
+   "paintedTitles": false,
+   "reserved": {
+    "constellation": {
+     "x": 920,
+     "y": 1196,
+     "w": 170,
+     "h": 170
+    },
+    "strip": {
+     "x": 40,
+     "y": 1300,
+     "w": 860,
+     "h": 70
+    }
+   }
   },
   "this-or-that": {
    "images": {
@@ -439,7 +436,8 @@
      "maxFont": 30,
      "minFont": 20,
      "maxLines": 2,
-     "text": "YES, PLEASE"
+     "text": "YES, PLEASE",
+     "prompt": "A yes"
     },
     {
      "id": "no-heading",
@@ -485,7 +483,8 @@
      "h": 52,
      "maxFont": 30,
      "minFont": 20,
-     "maxLines": 1
+     "maxLines": 1,
+     "prompt": "A yes"
     },
     {
      "id": "yes-2",
@@ -495,7 +494,8 @@
      "h": 70,
      "maxFont": 32,
      "minFont": 20,
-     "maxLines": 2
+     "maxLines": 2,
+     "prompt": "A yes"
     },
     {
      "id": "yes-3",
@@ -505,7 +505,8 @@
      "h": 70,
      "maxFont": 32,
      "minFont": 20,
-     "maxLines": 2
+     "maxLines": 2,
+     "prompt": "A yes"
     },
     {
      "id": "yes-4",
@@ -515,7 +516,8 @@
      "h": 70,
      "maxFont": 32,
      "minFont": 20,
-     "maxLines": 2
+     "maxLines": 2,
+     "prompt": "A yes"
     },
     {
      "id": "yes-5",
@@ -525,7 +527,8 @@
      "h": 70,
      "maxFont": 32,
      "minFont": 20,
-     "maxLines": 2
+     "maxLines": 2,
+     "prompt": "A yes"
     },
     {
      "id": "yes-6",
@@ -535,7 +538,8 @@
      "h": 70,
      "maxFont": 32,
      "minFont": 20,
-     "maxLines": 2
+     "maxLines": 2,
+     "prompt": "A yes"
     },
     {
      "id": "yes-7",
@@ -545,7 +549,8 @@
      "h": 70,
      "maxFont": 32,
      "minFont": 20,
-     "maxLines": 2
+     "maxLines": 2,
+     "prompt": "A yes"
     },
     {
      "id": "no-1",
@@ -555,7 +560,8 @@
      "h": 52,
      "maxFont": 30,
      "minFont": 20,
-     "maxLines": 1
+     "maxLines": 1,
+     "prompt": "A no"
     },
     {
      "id": "no-2",
@@ -565,7 +571,8 @@
      "h": 70,
      "maxFont": 32,
      "minFont": 20,
-     "maxLines": 2
+     "maxLines": 2,
+     "prompt": "A no"
     },
     {
      "id": "no-3",
@@ -575,7 +582,8 @@
      "h": 70,
      "maxFont": 32,
      "minFont": 20,
-     "maxLines": 2
+     "maxLines": 2,
+     "prompt": "A no"
     },
     {
      "id": "no-4",
@@ -585,7 +593,8 @@
      "h": 70,
      "maxFont": 32,
      "minFont": 20,
-     "maxLines": 2
+     "maxLines": 2,
+     "prompt": "A no"
     },
     {
      "id": "no-5",
@@ -595,7 +604,8 @@
      "h": 70,
      "maxFont": 32,
      "minFont": 20,
-     "maxLines": 2
+     "maxLines": 2,
+     "prompt": "A no"
     },
     {
      "id": "no-6",
@@ -605,7 +615,8 @@
      "h": 70,
      "maxFont": 32,
      "minFont": 20,
-     "maxLines": 2
+     "maxLines": 2,
+     "prompt": "A no"
     },
     {
      "id": "no-7",
@@ -615,14 +626,15 @@
      "h": 70,
      "maxFont": 32,
      "minFont": 20,
-     "maxLines": 2
+     "maxLines": 2,
+     "prompt": "A no"
     },
     {
      "id": "opening",
      "x": 40,
-     "y": 1262,
-     "w": 850,
-     "h": 48,
+     "y": 1246,
+     "w": 860,
+     "h": 46,
      "maxFont": 28,
      "minFont": 18,
      "maxLines": 1,
@@ -631,15 +643,30 @@
     {
      "id": "footer",
      "x": 40,
-     "y": 1325,
-     "w": 850,
+     "y": 1322,
+     "w": 860,
      "h": 44,
      "maxFont": 24,
      "minFont": 16,
      "maxLines": 1,
-     "text": "Made with Orbit & Wonder \u00b7 [APP URL]"
+     "text": "Made with Orbit & Wonder [ · short public link, only when verified]"
     }
-   ]
+   ],
+   "paintedTitles": false,
+   "reserved": {
+    "constellation": {
+     "x": 920,
+     "y": 1196,
+     "w": 170,
+     "h": 170
+    },
+    "strip": {
+     "x": 40,
+     "y": 1300,
+     "w": 860,
+     "h": 70
+    }
+   }
   }
  }
 }

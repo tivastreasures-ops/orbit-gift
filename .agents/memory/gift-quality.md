@@ -31,4 +31,4 @@ Run the fixed Hinterwelle, Wolfboy, easy and two-love sparse profile checks afte
 
 **Why:** The Director explicitly requires this regression discipline.
 
-**How to apply:** Distinguish deterministic transport tests from real Claude quality runs. Run the four profiles once after the coherent fix; if any still fails, stop and report rather than tuning/re-running. Missing credentials/details are blocked, not passes; never invent test tastes.
+**How to apply:** Distinguish deterministic transport tests from real Claude quality runs. The Director's current gate is Hinterwelle alone first; only if it shows ideas with zero format failures run Wolfboy, Mira and Sol once each. If Hinterwelle fails, stop/report, not another tuning/live-run loop. A malformed tool reply may receive its explicitly allowed single format-only correction. Missing credentials/details are blocked, not passes; never invent test tastes.

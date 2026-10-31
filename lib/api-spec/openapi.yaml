@@ -157,10 +157,10 @@ components:
         because: { type: string }
         sourceLoves:
           type: array
-          minItems: 1
+          minItems: 0
           maxItems: 2
           items: { type: string }
-          description: Exact supplied love strings validated by the server; optional for older locally saved ideas.
+          description: Exact supplied love strings validated by the server; empty means whole-sky fallback, optional for older locally saved ideas.
         kind:
           type: string
           enum: [object, experience, consumable, maker, collectible, wildcard]

@@ -9,6 +9,7 @@ import { KINDS, type QualityCandidate } from "./quality";
 import { passesRules } from "./rules";
 import { TEST_PROFILES } from "./test-profiles";
 import { resolveLove, searchWikipedia } from "./wikipedia";
+import { generationContract, criticContract, ToolFormatError } from "./tool-contracts";
 
 // Contract-only synthetic transport. These are NEVER used by app routes or
 // reported as real Claude sample runs / semantic-quality evidence.
@@ -37,7 +38,7 @@ function fakeSession(hook?: (stage: ClaudeStage, data: any, response: any) => an
     model: "test-only", helperModel: "test-only", calls,
     async json(stage, _prompt, input) {
       calls[stage]++;
-      const data = input as any;
+      const data = (input as any).originalInput ?? input as any;
       let response: any;
       if (stage === "expansion") response = { loves: data.resolved.map((r: any) => ({
         love: r.love, specifics: ["test-specific detail"], eras: [], subgenres: [], adjacent: [], aesthetics: [], signatureObjects: [], places: [],
@@ -52,6 +53,35 @@ function fakeSession(hook?: (stage: ClaudeStage, data: any, response: any) => an
     },
   };
 }
+test("unrecoverable generation/critic format failures are explicit errors, never empty quality rounds", async () => {
+  for (const brokenStage of ["generation", "critic"]) {
+    const claude = fakeSession((stage, _input, response) => stage === brokenStage
+      ? brokenStage === "generation" ? { ideas: "wrong format" } : { verdicts: "wrong format" }
+      : response);
+    const trace: any[] = [];
+    await assert.rejects(generate(TEST_PROFILES[0].input!, {
+      claude, profiles: new ProfileExpander(resolver),
+      refusals: new RefusalExpander(), trace: e => trace.push(e),
+    }), ToolFormatError);
+    assert.equal(claude.formatFailures?.length, 2);
+    assert.equal(claude.calls[brokenStage as "generation" | "critic"], 2);
+    assert.ok(trace.some(e => e.violations.some((v: any) => v.stage === "format")));
+  }
+});
+test("critic identity mistakes receive a format-only correction, not invented verdicts", async () => {
+  let criticReplies = 0;
+  const claude = fakeSession((stage, _input, response) => {
+    if (stage === "critic" && ++criticReplies === 1) response.verdicts[0].id = "unknown-candidate";
+    return response;
+  });
+  const result = await generate(TEST_PROFILES[0].input!, {
+    claude, profiles: new ProfileExpander(resolver),
+    refusals: new RefusalExpander(),
+  });
+  assert.equal(result.ideas.length, 12);
+  assert.equal(claude.calls.critic, 2);
+  assert.match(claude.formatFailures![0].issues[0], /candidate id/);
+});
 for (const profile of TEST_PROFILES) {
   test(`fixed profile contract: ${profile.name}`, async () => {
     assert.ok(profile.input, "A required fixed-profile fixture is missing");
@@ -252,11 +282,11 @@ test("direct Anthropic transport never uses a proxy or falls back after 401", as
       assert.equal(JSON.parse(String(init?.body)).model, "test-helper");
       return new Response("private upstream error", { status: 401 });
     });
-    await assert.rejects(session.json("critic", "test", {}), /Anthropic request failed \(401\)/);
+    await assert.rejects(session.json("critic", "test", {}, criticContract), /Anthropic request failed \(401;/);
     assert.equal(requests, 1);
     assert.equal(session.calls.critic, 1);
     delete process.env.ANTHROPIC_API_KEY;
-    await assert.rejects(session.json("generation", "test", {}), /key missing/);
+    await assert.rejects(session.json("generation", "test", {}, generationContract), /key missing/);
     assert.equal(requests, 1);
   } finally {
     for (const [key, value] of Object.entries({ ANTHROPIC_API_KEY: priorKey, ANTHROPIC_MODEL: priorModel, ANTHROPIC_HELPER_MODEL: priorHelper })) {
